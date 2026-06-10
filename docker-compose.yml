@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    container_name: whalesea
+    ports:
+      - "80:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      # 重要:上线前改成你自己的随机长字符串(如 openssl rand -hex 32 生成)
+      - JWT_SECRET=CHANGE_ME_TO_RANDOM_64_CHARS
+    restart: unless-stopped
