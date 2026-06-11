@@ -17,6 +17,8 @@ from pydantic import BaseModel
 
 DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__), "data", "whale.db"))
 SECRET = os.environ.get("JWT_SECRET", "please-change-me")
+ADMIN_EMAIL = "admin@whalesea.local"
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")  # 设置后,启动时将官方账号密码重置为该值
 STATIC_DIR = os.environ.get("STATIC_DIR", os.path.join(os.path.dirname(__file__), "static"))
 TOKEN_TTL = 60 * 60 * 24 * 30  # 30 天
 
@@ -63,18 +65,28 @@ def init_db():
         );
         """
     )
+    # 迁移:users 表补 banned 列(0=正常 1=封禁)
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
+    if "banned" not in cols:
+        conn.execute("ALTER TABLE users ADD COLUMN banned INTEGER NOT NULL DEFAULT 0")
     # 种子:官方账号 + 版规置顶帖
     if conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0:
         now = now_str()
         conn.execute(
             "INSERT INTO users(email,name,pw,role,created) VALUES(?,?,?,?,?)",
-            ("admin@whalesea.local", "鲸海拾贝官方", hash_pw(secrets.token_hex(16)), "official", now),
+            (ADMIN_EMAIL, "鲸海拾贝官方", hash_pw(secrets.token_hex(16)), "official", now),
         )
-        uid = conn.execute("SELECT id FROM users WHERE email='admin@whalesea.local'").fetchone()[0]
+        uid = conn.execute("SELECT id FROM users WHERE email=?", (ADMIN_EMAIL,)).fetchone()[0]
         conn.execute(
             "INSERT INTO threads(user_id,cat,title,content,pinned,created) VALUES(?,?,?,?,1,?)",
             (uid, "notice", "社区版规与发帖指南 v1.0",
              "占位:发帖分类规范、互评礼仪、商单信息发布规则。\n\n1. 互评先讲优点,再给可执行的修改建议。\n2. 答疑帖请附完整 prompt 与工具版本。\n3. 商业合作信息仅限商单大厅发布。", now),
+        )
+    # 管理员激活:设置了 ADMIN_PASSWORD 时,启动即重置官方账号密码并确保可登录
+    if ADMIN_PASSWORD:
+        conn.execute(
+            "UPDATE users SET pw=?, role='official', banned=0 WHERE email=?",
+            (hash_pw(ADMIN_PASSWORD), ADMIN_EMAIL),
         )
     conn.commit()
     conn.close()
@@ -135,11 +147,19 @@ def current_user(authorization: str = Header(None)):
     if uid is None:
         raise HTTPException(401, "登录已过期,请重新登录")
     conn = db()
-    row = conn.execute("SELECT id,email,name,role FROM users WHERE id=?", (uid,)).fetchone()
+    row = conn.execute("SELECT id,email,name,role,banned FROM users WHERE id=?", (uid,)).fetchone()
     conn.close()
     if not row:
         raise HTTPException(401, "账号不存在")
+    if row["banned"]:
+        raise HTTPException(403, "账号已被封禁,如有疑问请联系官方")
     return dict(row)
+
+
+def require_admin(user=Depends(current_user)):
+    if user["role"] != "official":
+        raise HTTPException(403, "仅官方账号可操作")
+    return user
 
 
 def public_user(u) -> dict:
@@ -168,7 +188,20 @@ class ReplyIn(BaseModel):
     content: str
 
 
+class BanIn(BaseModel):
+    banned: bool
+
+
+class RoleIn(BaseModel):
+    role: str
+
+
+class PinIn(BaseModel):
+    pinned: bool
+
+
 VALID_CATS = {"qa", "critique", "share", "notice"}
+VALID_ROLES = {"student", "mentor", "official"}
 
 
 # ---------------- 接口:健康 ----------------
@@ -211,6 +244,8 @@ def login(body: LoginIn):
     conn.close()
     if not row or not verify_pw(body.password, row["pw"]):
         raise HTTPException(400, "邮箱或密码错误")
+    if row["banned"]:
+        raise HTTPException(403, "账号已被封禁,如有疑问请联系官方")
     return {"token": make_token(row["id"]), "user": public_user(row)}
 
 
@@ -310,6 +345,118 @@ def create_reply(tid: int, body: ReplyIn, user=Depends(current_user)):
     rid = cur.lastrowid
     conn.close()
     return {"id": rid}
+
+
+# ---------------- 接口:管理后台(仅 official) ----------------
+@app.get("/api/admin/stats")
+def admin_stats(admin=Depends(require_admin)):
+    conn = db()
+    stats = {
+        "users": conn.execute("SELECT COUNT(*) FROM users").fetchone()[0],
+        "banned_users": conn.execute("SELECT COUNT(*) FROM users WHERE banned=1").fetchone()[0],
+        "threads": conn.execute("SELECT COUNT(*) FROM threads").fetchone()[0],
+        "replies": conn.execute("SELECT COUNT(*) FROM replies").fetchone()[0],
+        "views": conn.execute("SELECT COALESCE(SUM(views),0) FROM threads").fetchone()[0],
+    }
+    today = time.strftime("%Y-%m-%d")
+    stats["users_today"] = conn.execute(
+        "SELECT COUNT(*) FROM users WHERE created LIKE ?", (today + "%",)
+    ).fetchone()[0]
+    stats["threads_today"] = conn.execute(
+        "SELECT COUNT(*) FROM threads WHERE created LIKE ?", (today + "%",)
+    ).fetchone()[0]
+    conn.close()
+    return stats
+
+
+@app.get("/api/admin/users")
+def admin_users(admin=Depends(require_admin)):
+    conn = db()
+    rows = conn.execute(
+        """
+        SELECT u.id, u.email, u.name, u.role, u.banned, u.created,
+               (SELECT COUNT(*) FROM threads t WHERE t.user_id = u.id) AS thread_count,
+               (SELECT COUNT(*) FROM replies r WHERE r.user_id = u.id) AS reply_count
+        FROM users u ORDER BY u.id DESC
+        """
+    ).fetchall()
+    conn.close()
+    return {"users": [dict(r) for r in rows]}
+
+
+@app.post("/api/admin/users/{uid}/ban")
+def admin_ban(uid: int, body: BanIn, admin=Depends(require_admin)):
+    if uid == admin["id"]:
+        raise HTTPException(400, "不能封禁自己")
+    conn = db()
+    row = conn.execute("SELECT id, role FROM users WHERE id=?", (uid,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, "用户不存在")
+    if row["role"] == "official" and body.banned:
+        conn.close()
+        raise HTTPException(400, "不能封禁官方账号")
+    conn.execute("UPDATE users SET banned=? WHERE id=?", (1 if body.banned else 0, uid))
+    conn.commit()
+    conn.close()
+    return {"id": uid, "banned": body.banned}
+
+
+@app.post("/api/admin/users/{uid}/role")
+def admin_role(uid: int, body: RoleIn, admin=Depends(require_admin)):
+    if body.role not in VALID_ROLES:
+        raise HTTPException(400, "角色不合法")
+    if uid == admin["id"]:
+        raise HTTPException(400, "不能修改自己的角色")
+    conn = db()
+    row = conn.execute("SELECT id FROM users WHERE id=?", (uid,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, "用户不存在")
+    conn.execute("UPDATE users SET role=? WHERE id=?", (body.role, uid))
+    conn.commit()
+    conn.close()
+    return {"id": uid, "role": body.role}
+
+
+@app.post("/api/admin/threads/{tid}/pin")
+def admin_pin(tid: int, body: PinIn, admin=Depends(require_admin)):
+    conn = db()
+    row = conn.execute("SELECT id FROM threads WHERE id=?", (tid,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, "帖子不存在")
+    conn.execute("UPDATE threads SET pinned=? WHERE id=?", (1 if body.pinned else 0, tid))
+    conn.commit()
+    conn.close()
+    return {"id": tid, "pinned": body.pinned}
+
+
+@app.delete("/api/admin/threads/{tid}")
+def admin_delete_thread(tid: int, admin=Depends(require_admin)):
+    conn = db()
+    row = conn.execute("SELECT id FROM threads WHERE id=?", (tid,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, "帖子不存在")
+    conn.execute("DELETE FROM replies WHERE thread_id=?", (tid,))
+    conn.execute("DELETE FROM threads WHERE id=?", (tid,))
+    conn.commit()
+    conn.close()
+    return {"id": tid, "deleted": True}
+
+
+@app.delete("/api/admin/replies/{rid}")
+def admin_delete_reply(rid: int, admin=Depends(require_admin)):
+    conn = db()
+    row = conn.execute("SELECT id FROM replies WHERE id=?", (rid,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, "回复不存在")
+    conn.execute("DELETE FROM replies WHERE id=?", (rid,))
+    conn.commit()
+    conn.close()
+    return {"id": rid, "deleted": True}
 
 
 # ---------------- 静态站点 ----------------
