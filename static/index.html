@@ -594,6 +594,36 @@ function useHashRoute() {
   return route;
 }
 
+/* ---------- 内容数据(API 优先,失败/为空回退占位演示) ---------- */
+const GIG_PILL = { open: ['open', 'OPEN 招募中'], doing: ['doing', 'WIP 进行中'], done: ['done', 'DONE 已完成'] };
+const DOC_PILL = { prompt: ['open', 'PROMPT'], workflow: ['doing', 'WORKFLOW'], review: ['done', 'REVIEW'], tool: ['open', 'TOOLS'] };
+const splitTags = s => (s ? s.split(',').map(t => t.trim()).filter(Boolean) : []);
+const mapWork = it => ({ ...it, desc: it.summary, who: it.author, tags: splitTags(it.tags) });
+const mapGig = it => ({ ...it, desc: it.summary, price: it.extra, note: it.date, pill: GIG_PILL[it.cat] || GIG_PILL.open });
+const mapCase = it => ({ ...it, desc: it.summary });
+const mapDoc = it => ({ ...it, desc: it.summary, pill: DOC_PILL[it.cat] || ['open', (it.cat || 'DOC').toUpperCase()] });
+const mapCourse = it => ({ ...it, desc: it.summary, level: it.cat, hours: it.extra });
+
+function useContent(kind, demo, map) {
+  const [items, setItems] = useState(null);
+  const [isDemo, setIsDemo] = useState(true);
+  useEffect(() => {
+    api('/api/content/' + kind)
+      .then(d => {
+        if (d.items.length) { setItems(d.items.map(map)); setIsDemo(false); }
+        else { setItems(demo); setIsDemo(true); }
+      })
+      .catch(() => { setItems(demo); setIsDemo(true); });
+  }, [kind]);
+  return [items || demo, isDemo];
+}
+
+function DemoHint({ on }) {
+  const { user } = useContext(AuthCtx);
+  if (!on || !user || user.role !== 'official') return null;
+  return <div className="demo-banner">DEMO · 当前为占位演示数据(后端不可达),线上请在管理后台「内容管理」录入真实内容。</div>;
+}
+
 /* ---------- 渐显(慢而轻) ---------- */
 function Reveal({ children, delay = 0, y = 18, className = '', style = {} }) {
   const ref = useRef(null);
@@ -1248,7 +1278,8 @@ const WORKS = [
 
 function Works() {
   const [f, setF] = useState('all');
-  const list = WORKS.filter(w => f === 'all' || w.cat === f);
+  const [rows, isDemo] = useContent('work', WORKS, mapWork);
+  const list = rows.filter(w => f === 'all' || w.cat === f);
   return (
     <React.Fragment>
       <section className="page-head">
@@ -1262,6 +1293,7 @@ function Works() {
       </section>
       <section className="section tight">
         <div className="container">
+          <DemoHint on={isDemo} />
           <Reveal>
             <div className="filter-bar">
               {WORK_CATS.map(c => <button key={c.id} className={f === c.id ? 'on' : ''} onClick={() => setF(c.id)}>{c.label}</button>)}
@@ -1269,14 +1301,14 @@ function Works() {
           </Reveal>
           <div className="grid g3">
             {list.map((w, i) => (
-              <a className="card" href="#/works" key={w.title + i}>
+              <a className="card" href={w.link || '#/works'} target={w.link ? '_blank' : undefined} rel={w.link ? 'noopener' : undefined} key={(w.id || w.title) + '-' + i}>
                 <div className="thumb"><span className="glyph">{w.icon}</span><span className="badge">{w.badge}</span></div>
                 <div className="body">
                   <h3>{w.title}</h3>
                   <p>{w.desc}</p>
                   <div className="meta">
                     <div className="tags">{w.tags.map(t => <span className="tag" key={t}>{t}</span>)}</div>
-                    <span>{w.who} · {w.date}</span>
+                    <span>{w.who}{w.date ? ' · ' + w.date : ''}</span>
                   </div>
                 </div>
                 <span className="arrow">→</span>
@@ -1308,6 +1340,8 @@ const STEPS = [
 ];
 
 function Projects() {
+  const [gigs, gigsDemo] = useContent('gig', REQUESTS, mapGig);
+  const [cases] = useContent('case', CASES, mapCase);
   return (
     <React.Fragment>
       <section className="page-head">
@@ -1321,12 +1355,13 @@ function Projects() {
       </section>
       <section className="section tight">
         <div className="container">
+          <DemoHint on={gigsDemo} />
           <SectionHead no="A" kicker="Open Requests" title="最新需求" moreHref="#/projects" moreText="POST REQUEST" />
           <Reveal delay={120}>
             <div className="index-list">
-              {REQUESTS.map(r => (
-                <a className="row-item" href="#/projects" key={r.idx}>
-                  <span className="idx">{r.idx}</span>
+              {gigs.map((r, i) => (
+                <a className="row-item" href={r.link || '#/projects'} target={r.link ? '_blank' : undefined} rel={r.link ? 'noopener' : undefined} key={(r.id || r.title) + '-' + i}>
+                  <span className="idx">{String(i + 1).padStart(3, '0')}</span>
                   <span className="ricon">{r.icon}</span>
                   <div className="rbody">
                     <h3>{r.title} <span className={'pill ' + r.pill[0]}>{r.pill[1]}</span></h3>
@@ -1345,8 +1380,8 @@ function Projects() {
           <SectionHead no="B" kicker="Case Studies" title="合作案例" />
           <Reveal delay={120}>
             <div className="grid g3">
-              {CASES.map((c, i) => (
-                <a className="card" href="#/projects" key={i}>
+              {cases.map((c, i) => (
+                <a className="card" href={c.link || '#/projects'} target={c.link ? '_blank' : undefined} rel={c.link ? 'noopener' : undefined} key={(c.id || c.title) + '-' + i}>
                   <div className="thumb"><span className="glyph">{c.icon}</span><span className="badge">{c.badge}</span></div>
                   <div className="body">
                     <h3>{c.title}</h3>
@@ -1410,7 +1445,8 @@ const DOCS = [
 
 function Knowledge() {
   const [f, setF] = useState('all');
-  const list = DOCS.filter(d => f === 'all' || d.cat === f);
+  const [rows, isDemo] = useContent('doc', DOCS, mapDoc);
+  const list = rows.filter(d => f === 'all' || d.cat === f);
   return (
     <React.Fragment>
       <section className="page-head">
@@ -1424,6 +1460,7 @@ function Knowledge() {
       </section>
       <section className="section tight">
         <div className="container">
+          <DemoHint on={isDemo} />
           <Reveal>
             <div className="filter-bar">
               {DOC_CATS.map(c => <button key={c.id} className={f === c.id ? 'on' : ''} onClick={() => setF(c.id)}>{c.label}</button>)}
@@ -1431,7 +1468,7 @@ function Knowledge() {
           </Reveal>
           <div className="index-list">
             {list.map((d, i) => (
-              <a className="row-item" href="#/knowledge" key={d.title}>
+              <a className="row-item" href={d.link || '#/knowledge'} target={d.link ? '_blank' : undefined} rel={d.link ? 'noopener' : undefined} key={(d.id || d.title) + '-' + i}>
                 <span className="idx">{String(i + 1).padStart(3, '0')}</span>
                 <span className="ricon">{d.icon}</span>
                 <div className="rbody"><h3>{d.title}</h3><p>{d.desc}</p></div>
@@ -1464,7 +1501,10 @@ const COURSES = [
   { icon: '💼', badge: 'Business', title: '课程标题占位:商单实战与交付规范', level: '实战' },
 ];
 
+const PATH_LEVELS = { 'LV.1': '入门', 'LV.2': '进阶', 'LV.3': '实战' };
+
 function Courses() {
+  const [rows, isDemo] = useContent('course', COURSES, mapCourse);
   return (
     <React.Fragment>
       <section className="page-head">
@@ -1478,6 +1518,7 @@ function Courses() {
       </section>
       <section className="section tight">
         <div className="container">
+          <DemoHint on={isDemo} />
           <SectionHead no="A" kicker="Learning Path" title="学习路径" />
           <Reveal delay={120}>
             <div className="grid g3">
@@ -1486,7 +1527,7 @@ function Courses() {
                   <span className="no">{p.no}</span>
                   <h3>{p.title}</h3>
                   <p>{p.desc}</p>
-                  <span className="link">0 COURSES →</span>
+                  <span className="link">{rows.filter(c => c.level === PATH_LEVELS[p.no]).length} COURSES →</span>
                 </div>
               ))}
             </div>
@@ -1498,15 +1539,15 @@ function Courses() {
           <SectionHead no="B" kicker="Courses" title="精选课程" />
           <Reveal delay={120}>
             <div className="grid g3">
-              {COURSES.map((c, i) => (
-                <a className="card" href="#/courses" key={c.title}>
+              {rows.map((c, i) => (
+                <a className="card" href={c.link || '#/courses'} target={c.link ? '_blank' : undefined} rel={c.link ? 'noopener' : undefined} key={(c.id || c.title) + '-' + i}>
                   <div className="thumb"><span className="glyph">{c.icon}</span><span className="badge">{c.badge}</span></div>
                   <div className="body">
                     <h3>{c.title}</h3>
-                    <p>占位:课时数、难度、学完能做什么。</p>
+                    <p>{c.desc || '占位:课时数、难度、学完能做什么。'}</p>
                     <div className="meta">
                       <div className="tags"><span className="tag">{c.level}</span></div>
-                      <span>00 课时</span>
+                      <span>{c.hours || '00 课时'}</span>
                     </div>
                   </div>
                   <span className="arrow">→</span>
@@ -1946,6 +1987,127 @@ function UserChip({ user, onLogout }) {
 /* ---------- 管理后台(仅 official) ---------- */
 const ROLE_NAMES = { student: '学员', mentor: '导师', official: '官方' };
 
+/* ---------- 管理后台:内容管理 ---------- */
+const KIND_TABS = [
+  ['work', '作品'], ['gig', '商单需求'], ['case', '合作案例'], ['doc', '知识文档'], ['course', '课程'],
+];
+const KIND_CATS = {
+  work: [['film', '短片'], ['mv', '音乐MV'], ['image', '图像'], ['ip', '角色IP'], ['other', '其他']],
+  gig: [['open', '招募中'], ['doing', '进行中'], ['done', '已完成']],
+  case: [],
+  doc: [['prompt', 'Prompt模板'], ['workflow', '工作流'], ['review', '复盘'], ['tool', '工具评测']],
+  course: [['入门', '入门'], ['进阶', '进阶'], ['实战', '实战']],
+};
+const KIND_PH = {
+  work: { author: '作者,如 张三', date: '展示日期,如 2026-06', extra: '(此类型未用)', badge: '角标,如 AI Film', tags: '标签,逗号分隔,如 Midjourney,Suno' },
+  gig: { author: '(此类型未用)', date: '工期备注,如 DDL 2026-07', extra: '价格,如 ¥ 3,000', badge: '(此类型未用)', tags: '(此类型未用)' },
+  case: { author: '(此类型未用)', date: '交付时间,如 2026-05', extra: '(此类型未用)', badge: '角标,如 Brand', tags: '(此类型未用)' },
+  doc: { author: '(此类型未用)', date: '日期,如 2026-06', extra: '(此类型未用)', badge: '(此类型未用)', tags: '(此类型未用)' },
+  course: { author: '(此类型未用)', date: '(此类型未用)', extra: '课时,如 12 课时', badge: '角标,如 Image', tags: '(此类型未用)' },
+};
+
+function ContentAdmin() {
+  const [kind, setKind] = useState('work');
+  const [list, setList] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const load = k => api('/api/content/' + k).then(d => setList(d.items)).catch(e => setErr(e.message));
+  useEffect(() => { setList(null); setEditing(null); setErr(''); load(kind); }, [kind]);
+
+  const blank = () => ({ title: '', summary: '', cat: (KIND_CATS[kind][0] || [''])[0], icon: '', badge: '', tags: '', author: '', date: '', extra: '', link: '', sort: 0 });
+  const set = (k, v) => setEditing(e => ({ ...e, [k]: v }));
+  const ph = KIND_PH[kind];
+
+  const save = async () => {
+    if (!editing.title.trim()) { setErr('标题不能为空'); return; }
+    setBusy(true); setErr('');
+    try {
+      const body = { ...editing, sort: parseInt(editing.sort, 10) || 0 };
+      if (editing.id) await api('/api/content/' + kind + '/' + editing.id, { method: 'PUT', body });
+      else await api('/api/content/' + kind, { method: 'POST', body });
+      setEditing(null); load(kind);
+    } catch (e) { setErr(e.message); }
+    setBusy(false);
+  };
+  const del = async it => {
+    if (!window.confirm('删除「' + it.title + '」?此操作不可恢复。')) return;
+    try { await api('/api/content/' + kind + '/' + it.id, { method: 'DELETE' }); load(kind); }
+    catch (e) { setErr(e.message); }
+  };
+
+  return (
+    <div>
+      <div className="admin-tabs" style={{ marginBottom: 22 }}>
+        {KIND_TABS.map(([k, label]) => (
+          <button key={k} className={kind === k ? 'on' : ''} onClick={() => setKind(k)}>{label}</button>
+        ))}
+        <button onClick={() => { setErr(''); setEditing(blank()); }} style={{ marginLeft: 'auto' }}>+ 新增{(KIND_TABS.find(t => t[0] === kind) || [])[1]}</button>
+      </div>
+      {err && <div className="demo-banner" style={{ borderColor: '#d05858', color: '#d05858' }}>ERROR · {err}</div>}
+
+      {editing && (
+        <div className="composer">
+          <div className="field"><input value={editing.title} onChange={e => set('title', e.target.value)} placeholder="标题(必填)" maxLength={120} /></div>
+          {KIND_CATS[kind].length > 0 && (
+            <div className="field">
+              <span className="f-pre">分类</span>
+              <select value={editing.cat} onChange={e => set('cat', e.target.value)}>
+                {KIND_CATS[kind].map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+              </select>
+            </div>
+          )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 10 }}>
+            <div className="field"><input value={editing.icon} onChange={e => set('icon', e.target.value)} placeholder="图标 emoji,如 🎬" /></div>
+            <div className="field"><input value={editing.badge} onChange={e => set('badge', e.target.value)} placeholder={ph.badge} /></div>
+            <div className="field"><input value={editing.tags} onChange={e => set('tags', e.target.value)} placeholder={ph.tags} /></div>
+            <div className="field"><input value={editing.author} onChange={e => set('author', e.target.value)} placeholder={ph.author} /></div>
+            <div className="field"><input value={editing.date} onChange={e => set('date', e.target.value)} placeholder={ph.date} /></div>
+            <div className="field"><input value={editing.extra} onChange={e => set('extra', e.target.value)} placeholder={ph.extra} /></div>
+            <div className="field"><input value={editing.link} onChange={e => set('link', e.target.value)} placeholder="跳转链接(可选,https://…)" /></div>
+            <div className="field"><input value={editing.sort} onChange={e => set('sort', e.target.value)} placeholder="排序权重,数字大的在前" inputMode="numeric" /></div>
+          </div>
+          <textarea value={editing.summary} onChange={e => set('summary', e.target.value)} placeholder="简介 / 摘要" />
+          <div className="rb-foot">
+            <span className="rb-hint">{editing.id ? 'EDIT · 正在编辑 #' + editing.id : 'NEW · 新增内容'}</span>
+            <span>
+              <button className="admin-act" onClick={() => setEditing(null)}>取消</button>
+              <button className="btn btn-primary" style={{ padding: '9px 22px', fontSize: 13 }} onClick={save} disabled={busy}>
+                {busy ? '保存中…' : '保存'}
+              </button>
+            </span>
+          </div>
+        </div>
+      )}
+
+      {list === null ? <div className="demo-banner">LOADING · 正在加载内容…</div> : (
+        <div className="admin-wrap">
+          <table className="admin-table">
+            <thead><tr><th>ID</th><th>标题</th><th>分类</th><th>日期</th><th>排序</th><th>操作</th></tr></thead>
+            <tbody>
+              {list.map(it => (
+                <tr key={it.id}>
+                  <td className="mono">{it.id}</td>
+                  <td style={{ maxWidth: 360 }}>{it.icon} {it.title}</td>
+                  <td className="mono">{it.cat || '—'}</td>
+                  <td className="mono">{it.date || '—'}</td>
+                  <td className="mono">{it.sort}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <button className="admin-act" onClick={() => { setErr(''); setEditing({ ...it }); window.scrollTo(0, 0); }}>编辑</button>
+                    <button className="admin-act danger" onClick={() => del(it)}>删除</button>
+                  </td>
+                </tr>
+              ))}
+              {list.length === 0 && <tr><td colSpan="6" className="mono">暂无内容,点右上「新增」录入第一条。</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Admin() {
   const { user, openAuth } = useContext(AuthCtx);
   const [tab, setTab] = useState('overview');
@@ -2015,6 +2177,7 @@ function Admin() {
         <div className="container">
           <div className="admin-tabs">
             <button className={tab === 'overview' ? 'on' : ''} onClick={() => setTab('overview')}>OVERVIEW 概览</button>
+            <button className={tab === 'content' ? 'on' : ''} onClick={() => setTab('content')}>CONTENT 内容管理</button>
             <button className={tab === 'threads' ? 'on' : ''} onClick={() => setTab('threads')}>THREADS 帖子管理</button>
             <button className={tab === 'users' ? 'on' : ''} onClick={() => setTab('users')}>USERS 用户管理</button>
           </div>
@@ -2030,9 +2193,12 @@ function Admin() {
                 <div className="admin-stat"><div className="k">REPLIES 回复</div><div className="v">{stats.replies}</div></div>
                 <div className="admin-stat"><div className="k">VIEWS 累计浏览</div><div className="v">{stats.views}</div></div>
                 <div className="admin-stat"><div className="k">BANNED 封禁中</div><div className="v">{stats.banned_users}</div></div>
+                <div className="admin-stat"><div className="k">ITEMS 内容条目</div><div className="v">{stats.items}</div></div>
               </div>
             )
           )}
+
+          {tab === 'content' && <ContentAdmin />}
 
           {tab === 'threads' && (
             threads === null ? <div className="demo-banner">LOADING · 正在加载帖子…</div> : (

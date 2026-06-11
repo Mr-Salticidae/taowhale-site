@@ -63,6 +63,22 @@ def init_db():
             content TEXT NOT NULL,
             created TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            kind TEXT NOT NULL,
+            title TEXT NOT NULL,
+            summary TEXT NOT NULL DEFAULT '',
+            cat TEXT NOT NULL DEFAULT '',
+            icon TEXT NOT NULL DEFAULT '',
+            badge TEXT NOT NULL DEFAULT '',
+            tags TEXT NOT NULL DEFAULT '',
+            author TEXT NOT NULL DEFAULT '',
+            date TEXT NOT NULL DEFAULT '',
+            extra TEXT NOT NULL DEFAULT '',
+            link TEXT NOT NULL DEFAULT '',
+            sort INTEGER NOT NULL DEFAULT 0,
+            created TEXT NOT NULL
+        );
         """
     )
     # 迁移:users 表补 banned 列(0=正常 1=封禁)
@@ -81,6 +97,46 @@ def init_db():
             "INSERT INTO threads(user_id,cat,title,content,pinned,created) VALUES(?,?,?,?,1,?)",
             (uid, "notice", "社区版规与发帖指南 v1.0",
              "占位:发帖分类规范、互评礼仪、商单信息发布规则。\n\n1. 互评先讲优点,再给可执行的修改建议。\n2. 答疑帖请附完整 prompt 与工具版本。\n3. 商业合作信息仅限商单大厅发布。", now),
+        )
+    # 种子:五类内容占位数据(与上线前的前端占位一致,后台可编辑替换)
+    if conn.execute("SELECT COUNT(*) FROM items").fetchone()[0] == 0:
+        now = now_str()
+        seed = [
+            # kind, title, summary, cat, icon, badge, tags, author, date, extra
+            ("work", "《短片作品标题占位》", "占位简介:短片梗概、风格与时长,后续替换为真实内容。", "film", "🎬", "AI Film", "Seedance,MJ", "学员A", "2026-06", ""),
+            ("work", "《MV 作品标题占位》", "占位简介:AI 原创歌曲 + 视觉 MV,附完整字幕工作流。", "mv", "🎵", "Music MV", "Suno,ffmpeg", "学员B", "2026-06", ""),
+            ("work", "《海报作品标题占位》", "占位简介:比赛获奖 / 商用海报,附 prompt 与排版复盘。", "image", "🖼️", "Poster", "Midjourney", "学员C", "2026-05", ""),
+            ("work", "《角色 IP 名称占位》", "占位简介:角色设定、一致性方案与系列内容企划。", "ip", "🧸", "Character IP", "sref,oref", "学员D", "2026-05", ""),
+            ("work", "《短片作品标题占位》", "占位简介:短片梗概、风格与时长,后续替换为真实内容。", "film", "🎞️", "AI Film", "Kling", "学员E", "2026-04", ""),
+            ("work", "《系列图作品标题占位》", "占位简介:主题系列创作,附题眼发散与构图意图层复盘。", "image", "🌅", "Series", "gpt-image", "学员F", "2026-04", ""),
+            ("work", "《科普视频标题占位》", "占位简介:Remotion 数据驱动动画 + AI 配音解说。", "other", "📺", "Explainer", "Remotion", "学员G", "2026-03", ""),
+            ("work", "《公益作品标题占位》", "占位简介:AI 音乐公益项目,从创作到发布的完整记录。", "mv", "🎤", "Charity", "Suno,WhisperX", "学员H", "2026-03", ""),
+            ("work", "《实验作品标题占位》", "占位简介:新工具 / 新玩法探索性创作。", "other", "✨", "Experiment", "Lab", "学员I", "2026-02", ""),
+            ("gig", "需求标题占位:品牌宣传短片 ×1", "需求简介占位:时长、风格、交付物与周期说明。", "open", "🎬", "", "", "", "DDL 2026-07", "¥ 0,000"),
+            ("gig", "需求标题占位:产品主视觉海报 ×3", "需求简介占位:尺寸、平台、品牌规范说明。", "open", "🖼️", "", "", "", "DDL 2026-07", "¥ 0,000"),
+            ("gig", "需求标题占位:品牌主题曲 + MV", "需求简介占位:曲风参考、歌词方向与使用场景。", "doing", "🎵", "", "", "", "DELIVERING", "¥ 0,000"),
+            ("case", "案例标题占位:某品牌 AI 宣传片", "占位简介:需求背景 → 方案 → 交付成果 → 客户反馈。", "", "🤝", "Brand", "", "", "2026-05", ""),
+            ("case", "案例标题占位:某店铺全套 AI 视觉", "占位简介:需求背景 → 方案 → 交付成果 → 客户反馈。", "", "🏪", "E-commerce", "", "", "2026-04", ""),
+            ("case", "案例标题占位:公益歌曲 MV 项目", "占位简介:需求背景 → 方案 → 交付成果 → 社会反响。", "", "📣", "Charity", "", "", "2026-03", ""),
+            ("doc", "文档标题占位:口语化需求 → 专业提示词的转换框架", "摘要占位:主体 → 外观 → 环境 → 构图意图 → 光影 → 风格的分层提示词写法。", "prompt", "📌", "", "", "", "2026-06", ""),
+            ("doc", "文档标题占位:蒙眼剪辑法——不会剪辑软件也能精确出片", "摘要占位:Python + ffmpeg 的 AI 辅助剪辑闭环,从素材到成片。", "workflow", "🛠️", "", "", "", "2026-06", ""),
+            ("doc", "文档标题占位:MJ 角色一致性四层金字塔", "摘要占位:从 sref/oref 到角色设定文档,跨图保持同一角色。", "workflow", "🧸", "", "", "", "2026-05", ""),
+            ("doc", "文档标题占位:某获奖图复盘——它为什么能赢", "摘要占位:事实先行的复盘方法,提炼可迁移规则,防自我归因偏差。", "review", "🔁", "", "", "", "2026-05", ""),
+            ("doc", "文档标题占位:AI 歌曲字幕自动化——Demucs + WhisperX 链路", "摘要占位:人声分离、词级对齐、双语 SRT 的完整工程实践。", "workflow", "🎤", "", "", "", "2026-04", ""),
+            ("doc", "文档标题占位:主流 AI 视频工具横评(2026 上半年)", "摘要占位:Seedance / Sora / Kling / Runway 适用场景对比。", "tool", "⚖️", "", "", "", "2026-04", ""),
+            ("doc", "文档标题占位:Prompt Battle 题眼发散方法", "摘要占位:比赛主题如何先发散再收束,尺度跃迁与巨物地貌化规则。", "prompt", "⚡", "", "", "", "2026-03", ""),
+            ("doc", "文档标题占位:某商单项目复盘——从需求到验收", "摘要占位:商业项目的沟通、报价、交付与验收经验。", "review", "📊", "", "", "", "2026-03", ""),
+            ("course", "课程标题占位:Midjourney 从入门到风格化", "占位:课时数、难度、学完能做什么。", "入门", "🖼️", "Image", "", "", "", "00 课时"),
+            ("course", "课程标题占位:AI 短片创作全流程", "占位:课时数、难度、学完能做什么。", "进阶", "🎬", "Video", "", "", "", "00 课时"),
+            ("course", "课程标题占位:Suno 配乐与歌曲创作", "占位:课时数、难度、学完能做什么。", "进阶", "🎵", "Music", "", "", "", "00 课时"),
+            ("course", "课程标题占位:蒙眼剪辑法实战", "占位:课时数、难度、学完能做什么。", "进阶", "✂️", "Editing", "", "", "", "00 课时"),
+            ("course", "课程标题占位:提示词工程系统课", "占位:课时数、难度、学完能做什么。", "入门", "📌", "Prompt", "", "", "", "00 课时"),
+            ("course", "课程标题占位:商单实战与交付规范", "占位:课时数、难度、学完能做什么。", "实战", "💼", "Business", "", "", "", "00 课时"),
+        ]
+        conn.executemany(
+            "INSERT INTO items(kind,title,summary,cat,icon,badge,tags,author,date,extra,created) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            [s + (now,) for s in seed],
         )
     # 管理员激活:设置了 ADMIN_PASSWORD 时,启动即重置官方账号密码并确保可登录
     if ADMIN_PASSWORD:
@@ -200,8 +256,35 @@ class PinIn(BaseModel):
     pinned: bool
 
 
+class ItemIn(BaseModel):
+    title: str
+    summary: str = ""
+    cat: str = ""
+    icon: str = ""
+    badge: str = ""
+    tags: str = ""
+    author: str = ""
+    date: str = ""
+    extra: str = ""
+    link: str = ""
+    sort: int = 0
+
+
 VALID_CATS = {"qa", "critique", "share", "notice"}
 VALID_ROLES = {"student", "mentor", "official"}
+VALID_KINDS = {"work", "gig", "case", "doc", "course"}
+
+
+def check_kind(kind: str):
+    if kind not in VALID_KINDS:
+        raise HTTPException(400, "内容类型不合法")
+
+
+def check_item(body: ItemIn):
+    if not 1 <= len(body.title.strip()) <= 120:
+        raise HTTPException(400, "标题需 1-120 个字符")
+    if len(body.summary) > 2000:
+        raise HTTPException(400, "简介过长(最多 2000 字)")
 
 
 # ---------------- 接口:健康 ----------------
@@ -347,6 +430,72 @@ def create_reply(tid: int, body: ReplyIn, user=Depends(current_user)):
     return {"id": rid}
 
 
+# ---------------- 接口:内容(作品/商单/案例/文档/课程) ----------------
+ITEM_COLS = "id,kind,title,summary,cat,icon,badge,tags,author,date,extra,link,sort,created"
+
+
+@app.get("/api/content/{kind}")
+def list_items(kind: str):
+    check_kind(kind)
+    conn = db()
+    rows = conn.execute(
+        f"SELECT {ITEM_COLS} FROM items WHERE kind=? ORDER BY sort DESC, id DESC", (kind,)
+    ).fetchall()
+    conn.close()
+    return {"items": [dict(r) for r in rows]}
+
+
+@app.post("/api/content/{kind}")
+def create_item(kind: str, body: ItemIn, admin=Depends(require_admin)):
+    check_kind(kind)
+    check_item(body)
+    conn = db()
+    cur = conn.execute(
+        "INSERT INTO items(kind,title,summary,cat,icon,badge,tags,author,date,extra,link,sort,created) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (kind, body.title.strip(), body.summary, body.cat, body.icon, body.badge, body.tags,
+         body.author, body.date, body.extra, body.link, body.sort, now_str()),
+    )
+    conn.commit()
+    iid = cur.lastrowid
+    conn.close()
+    return {"id": iid}
+
+
+@app.put("/api/content/{kind}/{iid}")
+def update_item(kind: str, iid: int, body: ItemIn, admin=Depends(require_admin)):
+    check_kind(kind)
+    check_item(body)
+    conn = db()
+    row = conn.execute("SELECT id FROM items WHERE id=? AND kind=?", (iid, kind)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, "内容不存在")
+    conn.execute(
+        "UPDATE items SET title=?,summary=?,cat=?,icon=?,badge=?,tags=?,author=?,date=?,extra=?,link=?,sort=? "
+        "WHERE id=?",
+        (body.title.strip(), body.summary, body.cat, body.icon, body.badge, body.tags,
+         body.author, body.date, body.extra, body.link, body.sort, iid),
+    )
+    conn.commit()
+    conn.close()
+    return {"id": iid, "updated": True}
+
+
+@app.delete("/api/content/{kind}/{iid}")
+def delete_item(kind: str, iid: int, admin=Depends(require_admin)):
+    check_kind(kind)
+    conn = db()
+    row = conn.execute("SELECT id FROM items WHERE id=? AND kind=?", (iid, kind)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, "内容不存在")
+    conn.execute("DELETE FROM items WHERE id=?", (iid,))
+    conn.commit()
+    conn.close()
+    return {"id": iid, "deleted": True}
+
+
 # ---------------- 接口:管理后台(仅 official) ----------------
 @app.get("/api/admin/stats")
 def admin_stats(admin=Depends(require_admin)):
@@ -357,6 +506,7 @@ def admin_stats(admin=Depends(require_admin)):
         "threads": conn.execute("SELECT COUNT(*) FROM threads").fetchone()[0],
         "replies": conn.execute("SELECT COUNT(*) FROM replies").fetchone()[0],
         "views": conn.execute("SELECT COALESCE(SUM(views),0) FROM threads").fetchone()[0],
+        "items": conn.execute("SELECT COUNT(*) FROM items").fetchone()[0],
     }
     today = time.strftime("%Y-%m-%d")
     stats["users_today"] = conn.execute(
