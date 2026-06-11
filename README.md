@@ -1,4 +1,4 @@
-# 鲸海拾贝官网 · Whale Sea Site
+# 鲸海拾贝官网 · Taowhale Site
 
 聚焦 AIGC 创作的学习、展示与商业转化平台官网。React 前端 + FastAPI 后端 + Docker 一键部署。
 

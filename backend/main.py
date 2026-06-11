@@ -17,12 +17,13 @@ from pydantic import BaseModel
 
 DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__), "data", "whale.db"))
 SECRET = os.environ.get("JWT_SECRET", "please-change-me")
-ADMIN_EMAIL = "admin@whalesea.local"
+ADMIN_EMAIL = "admin@taowhale.local"
+LEGACY_ADMIN_EMAIL = "admin@whalesea.local"  # 品牌更名前的旧管理员邮箱,启动时自动迁移
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")  # 设置后,启动时将官方账号密码重置为该值
 STATIC_DIR = os.environ.get("STATIC_DIR", os.path.join(os.path.dirname(__file__), "static"))
 TOKEN_TTL = 60 * 60 * 24 * 30  # 30 天
 
-app = FastAPI(title="WhaleSea API", docs_url="/api/docs", openapi_url="/api/openapi.json")
+app = FastAPI(title="Taowhale API", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
 
 # ---------------- 数据库 ----------------
@@ -85,6 +86,8 @@ def init_db():
     cols = [r[1] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
     if "banned" not in cols:
         conn.execute("ALTER TABLE users ADD COLUMN banned INTEGER NOT NULL DEFAULT 0")
+    # 迁移:品牌更名,旧管理员邮箱改为新邮箱(无旧账号时为空操作)
+    conn.execute("UPDATE users SET email=? WHERE email=?", (ADMIN_EMAIL, LEGACY_ADMIN_EMAIL))
     # 种子:官方账号 + 版规置顶帖
     if conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0:
         now = now_str()
@@ -290,7 +293,7 @@ def check_item(body: ItemIn):
 # ---------------- 接口:健康 ----------------
 @app.get("/api/health")
 def health():
-    return {"ok": True, "service": "whalesea", "time": now_str()}
+    return {"ok": True, "service": "taowhale", "time": now_str()}
 
 
 # ---------------- 接口:认证 ----------------
