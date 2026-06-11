@@ -1443,10 +1443,98 @@ const DOCS = [
   { cat: 'review', icon: '📊', title: '文档标题占位:某商单项目复盘——从需求到验收', desc: '摘要占位:商业项目的沟通、报价、交付与验收经验。', pill: ['done', 'REVIEW'], date: '2026-03' },
 ];
 
+const KB_LEVELS = [['all', 'FULL 完整知识库'], ['group', 'GROUP 组专属'], ['personal', 'MINE 个人专属']];
+const KB_LEVEL_NAME = { all: '公开', group: '组', personal: '个人' };
+
+function kbLevelTag(d) {
+  if (d.level === 'group') return '组 · ' + (d.group_name || '');
+  if (d.level === 'personal') return '个人 · ' + (d.owner_name || '');
+  return '公开';
+}
+
 function Knowledge() {
+  const { user, openAuth } = useContext(AuthCtx);
+  const [meta, setMeta] = useState(null);
+  const [lvl, setLvl] = useState('all');
+  const [gid, setGid] = useState(0);
+  const [pid, setPid] = useState(0);
   const [f, setF] = useState('all');
-  const [rows, isDemo] = useContent('doc', DOCS, mapDoc);
-  const list = rows.filter(d => f === 'all' || d.cat === f);
+  const [docs, setDocs] = useState(null);
+  const [demo, setDemo] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const staff = !!(meta && meta.staff);
+  const isOfficial = user && user.role === 'official';
+
+  useEffect(() => {
+    api('/api/kb/meta').then(m => {
+      setMeta(m);
+      setGid(g => g || m.my_groups[0] || (m.groups[0] || {}).id || 0);
+      setPid(p => p || m.me);
+    }).catch(() => setMeta({ staff: false, groups: [], my_groups: [], people: [], me: 0 }));
+  }, [user]);
+
+  const loadDocs = () => {
+    let q = '/api/kb/docs';
+    if (lvl === 'group') q += '?level=group&group_id=' + gid;
+    else if (lvl === 'personal') q += '?level=personal&owner_id=' + pid;
+    api(q)
+      .then(d => { setDocs(d.docs); setDemo(false); })
+      .catch(() => { setDocs(DOCS.map(x => ({ ...x, summary: x.desc, level: 'all' }))); setDemo(true); });
+  };
+  useEffect(loadDocs, [lvl, gid, pid, user]);
+
+  const openDoc = d => {
+    setErr('');
+    if (demo) { setDetail({ ...d, content: '', author_name: '官方占位' }); return; }
+    api('/api/kb/docs/' + d.id).then(r => setDetail(r.doc)).catch(e => setErr(e.message));
+  };
+
+  const canWrite = d => user && (user.role === 'official' || d.author_id === user.id);
+
+  const blankDoc = () => ({
+    title: '', summary: '', content: '', cat: 'prompt', icon: '', tags: '', date: '', link: '', sort: 0,
+    level: staff && !isOfficial ? 'personal' : 'all', group_id: meta && (meta.my_groups[0] || (meta.groups[0] || {}).id) || 0, owner_id: 0,
+  });
+  const set = (k, v) => setEditing(e => ({ ...e, [k]: v }));
+
+  const saveDoc = async () => {
+    if (!editing.title.trim()) { setErr('标题不能为空'); return; }
+    setBusy(true); setErr('');
+    try {
+      const body = { ...editing, sort: parseInt(editing.sort, 10) || 0, group_id: parseInt(editing.group_id, 10) || 0 };
+      if (editing.id) await api('/api/kb/docs/' + editing.id, { method: 'PUT', body });
+      else await api('/api/kb/docs', { method: 'POST', body });
+      setEditing(null); setDetail(null); loadDocs();
+    } catch (e) { setErr(e.message); }
+    setBusy(false);
+  };
+  const delDoc = async d => {
+    if (!window.confirm('删除文档「' + d.title + '」?此操作不可恢复。')) return;
+    try { await api('/api/kb/docs/' + d.id, { method: 'DELETE' }); setDetail(null); loadDocs(); }
+    catch (e) { setErr(e.message); }
+  };
+
+  const levelOptions = [];
+  if (staff) {
+    levelOptions.push(['personal', '个人专属(我的库)']);
+    if (isOfficial || (meta && meta.my_groups.length > 0)) levelOptions.push(['group', '组专属']);
+    if (isOfficial) levelOptions.push(['all', '完整知识库(对外公开)']);
+  }
+  const groupOptions = meta ? (isOfficial ? meta.groups : meta.groups.filter(g => meta.my_groups.indexOf(g.id) >= 0)) : [];
+
+  const sortedGroups = meta ? [...meta.groups].sort((a, b) => {
+    const am = meta.my_groups.indexOf(a.id) >= 0 ? 0 : 1;
+    const bm = meta.my_groups.indexOf(b.id) >= 0 ? 0 : 1;
+    return am - bm || a.id - b.id;
+  }) : [];
+  const sortedPeople = meta ? [...meta.people].sort((a, b) => (a.id === meta.me ? -1 : b.id === meta.me ? 1 : a.id - b.id)) : [];
+
+  const list = (docs || []).filter(d => f === 'all' || d.cat === f);
+
   return (
     <React.Fragment>
       <section className="page-head">
@@ -1455,31 +1543,151 @@ function Knowledge() {
         <div className="container">
           <Reveal><span className="kicker"><span className="no">04</span>Knowledge</span></Reveal>
           <Reveal delay={100}><h1>知识库</h1></Reveal>
-          <Reveal delay={200}><p>沉淀可复用的方法论:Prompt 模板、工作流文档、创作复盘与工具评测。占位内容,后续接入真实知识库。</p></Reveal>
+          <Reveal delay={200}><p>沉淀可复用的方法论:Prompt 模板、工作流文档、创作复盘与工具评测。{staff ? '工作人员可浏览全部层级,并向自己的组库 / 个人库发布文档。' : ''}</p></Reveal>
         </div>
       </section>
       <section className="section tight">
         <div className="container">
-          <DemoHint on={isDemo} />
-          <Reveal>
-            <div className="filter-bar">
-              {DOC_CATS.map(c => <button key={c.id} className={f === c.id ? 'on' : ''} onClick={() => setF(c.id)}>{c.label}</button>)}
-            </div>
-          </Reveal>
-          <div className="index-list">
-            {list.map((d, i) => (
-              <a className="row-item" href={d.link || '#/knowledge'} target={d.link ? '_blank' : undefined} rel={d.link ? 'noopener' : undefined} key={(d.id || d.title) + '-' + i}>
-                <span className="idx">{String(i + 1).padStart(3, '0')}</span>
-                <span className="ricon">{d.icon}</span>
-                <div className="rbody"><h3>{d.title}</h3><p>{d.desc}</p></div>
-                <div className="rside">
-                  <span className={'pill ' + d.pill[0]}>{d.pill[1]}</span>
-                  <span style={{ display: 'block', marginTop: 7 }}>{d.date}</span>
+          <DemoHint on={demo} />
+          {err && <div className="demo-banner" style={{ borderColor: '#d05858', color: '#d05858' }}>ERROR · {err}</div>}
+
+          {detail === null && editing === null && (
+            <React.Fragment>
+              {staff && (
+                <div className="admin-tabs">
+                  {KB_LEVELS.map(([k, label]) => (
+                    <button key={k} className={lvl === k ? 'on' : ''} onClick={() => { setLvl(k); setF('all'); }}>{label}</button>
+                  ))}
+                  <button style={{ marginLeft: 'auto' }} onClick={() => { setErr(''); setEditing(blankDoc()); }}>+ 发布文档</button>
                 </div>
-                <span className="arrow">→</span>
-              </a>
-            ))}
-          </div>
+              )}
+              {staff && lvl === 'group' && (
+                <div className="filter-bar" style={{ borderBottom: 'none', marginBottom: 6 }}>
+                  {sortedGroups.map(g => (
+                    <button key={g.id} className={gid === g.id ? 'on' : ''} onClick={() => setGid(g.id)}>
+                      {meta.my_groups.indexOf(g.id) >= 0 ? '★ ' : ''}{g.name}
+                    </button>
+                  ))}
+                  {sortedGroups.length === 0 && <span className="rb-hint">暂无工作组,请在管理后台「组管理」创建。</span>}
+                </div>
+              )}
+              {staff && lvl === 'personal' && (
+                <div className="filter-bar" style={{ borderBottom: 'none', marginBottom: 6 }}>
+                  {sortedPeople.map(p => (
+                    <button key={p.id} className={pid === p.id ? 'on' : ''} onClick={() => setPid(p.id)}>
+                      {p.id === meta.me ? '★ 我的库' : p.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <Reveal>
+                <div className="filter-bar">
+                  {DOC_CATS.map(c => <button key={c.id} className={f === c.id ? 'on' : ''} onClick={() => setF(c.id)}>{c.label}</button>)}
+                </div>
+              </Reveal>
+              {docs === null ? <div className="demo-banner">LOADING · 正在加载文档…</div> : (
+                <div className="index-list">
+                  {list.map((d, i) => (
+                    <a className="row-item" href="#/knowledge" onClick={e => { e.preventDefault(); openDoc(d); }} key={(d.id || d.title) + '-' + i}>
+                      <span className="idx">{String(i + 1).padStart(3, '0')}</span>
+                      <span className="ricon">{d.icon}</span>
+                      <div className="rbody">
+                        <h3>{d.title}</h3>
+                        <p>{d.summary || d.desc}</p>
+                        {staff && lvl === 'all' && (
+                          <div className="thread-meta" style={{ marginTop: 6 }}>
+                            <span className={'role-pill ' + (d.level === 'all' ? '' : 'student')}>{kbLevelTag(d)}</span>
+                            {d.author_name && <span>{d.author_name}</span>}
+                          </div>
+                        )}
+                      </div>
+                      <div className="rside">
+                        <span className={'pill ' + (DOC_PILL[d.cat] || ['open'])[0]}>{(DOC_PILL[d.cat] || [0, (d.cat || 'DOC').toUpperCase()])[1]}</span>
+                        <span style={{ display: 'block', marginTop: 7 }}>{d.date}</span>
+                      </div>
+                      <span className="arrow">→</span>
+                    </a>
+                  ))}
+                  {list.length === 0 && <div className="demo-banner">该层级 / 分类下暂无文档{staff ? ',点右上「+ 发布文档」写第一篇。' : '。'}</div>}
+                </div>
+              )}
+            </React.Fragment>
+          )}
+
+          {detail !== null && editing === null && (
+            <div className="thread-detail">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button className="back-link" onClick={() => { setDetail(null); setErr(''); }}>← BACK · 返回文档列表</button>
+                {!demo && canWrite(detail) && (
+                  <span>
+                    <button className="mod-btn" onClick={() => setEditing({ ...detail, group_id: detail.group_id || 0, owner_id: detail.owner_id || 0 })}>EDIT 编辑</button>
+                    <button className="mod-btn" onClick={() => delDoc(detail)}>DEL 删除</button>
+                  </span>
+                )}
+              </div>
+              <h1>{detail.title}</h1>
+              <div className="post-head">
+                <span className="avatar mentor">{(detail.author_name || '?')[0]}</span>
+                <div>
+                  <div className="p-name">{detail.author_name} <span className="role-pill">{kbLevelTag(detail)}</span></div>
+                  <div className="p-time">{fmtTime(detail.created)}{detail.updated && detail.updated !== detail.created ? ' · 更新于 ' + fmtTime(detail.updated) : ''} · {(DOC_PILL[detail.cat] || [0, detail.cat])[1]}</div>
+                </div>
+              </div>
+              <div className="post-body">
+                {detail.summary && <p style={{ color: 'var(--dim)' }}>{detail.summary}</p>}
+                {String(detail.content || '').split('\n').map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
+                {!detail.content && !detail.summary && <p>(暂无正文)</p>}
+              </div>
+              {detail.link && <a className="btn btn-primary" style={{ marginTop: 10 }} href={detail.link} target="_blank" rel="noopener">打开关联链接 →</a>}
+            </div>
+          )}
+
+          {editing !== null && (
+            <div>
+              <button className="back-link" onClick={() => { setEditing(null); setErr(''); }}>← BACK · 取消{editing.id ? '编辑' : '发布'}</button>
+              <div className="composer">
+                <div className="field"><input value={editing.title} onChange={e => set('title', e.target.value)} placeholder="文档标题(必填)" maxLength={120} /></div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 10 }}>
+                  <div className="field">
+                    <span className="f-pre">层级</span>
+                    <select value={editing.level} onChange={e => set('level', e.target.value)}>
+                      {levelOptions.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+                    </select>
+                  </div>
+                  {editing.level === 'group' && (
+                    <div className="field">
+                      <span className="f-pre">所属组</span>
+                      <select value={editing.group_id} onChange={e => set('group_id', e.target.value)}>
+                        {groupOptions.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  <div className="field">
+                    <span className="f-pre">分类</span>
+                    <select value={editing.cat} onChange={e => set('cat', e.target.value)}>
+                      <option value="prompt">Prompt 模板</option>
+                      <option value="workflow">工作流</option>
+                      <option value="review">复盘</option>
+                      <option value="tool">工具评测</option>
+                    </select>
+                  </div>
+                  <div className="field"><input value={editing.icon} onChange={e => set('icon', e.target.value)} placeholder="图标 emoji,如 📌" /></div>
+                  <div className="field"><input value={editing.tags} onChange={e => set('tags', e.target.value)} placeholder="标签,逗号分隔" /></div>
+                  <div className="field"><input value={editing.date} onChange={e => set('date', e.target.value)} placeholder="日期,如 2026-06" /></div>
+                  <div className="field"><input value={editing.link} onChange={e => set('link', e.target.value)} placeholder="关联链接(可选)" /></div>
+                  <div className="field"><input value={editing.sort} onChange={e => set('sort', e.target.value)} placeholder="排序权重,大的在前" inputMode="numeric" /></div>
+                </div>
+                <textarea value={editing.summary} onChange={e => set('summary', e.target.value)} placeholder="摘要(列表页展示)" style={{ minHeight: 70 }} />
+                <textarea value={editing.content} onChange={e => set('content', e.target.value)} placeholder="正文内容(纯文本,换行分段)" style={{ minHeight: 220 }} />
+                <div className="rb-foot">
+                  <span className="rb-hint">{editing.id ? 'EDIT · 正在编辑 #' + editing.id : 'NEW · 发布到:' + (KB_LEVEL_NAME[editing.level] || '')}</span>
+                  <button className="btn btn-primary" style={{ padding: '9px 22px', fontSize: 13 }} onClick={saveDoc} disabled={busy}>
+                    {busy ? '保存中…' : (editing.id ? '保存修改' : '发布文档')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </React.Fragment>
@@ -1987,9 +2195,96 @@ function UserChip({ user, onLogout }) {
 /* ---------- 管理后台(仅 official) ---------- */
 const ROLE_NAMES = { student: '学员', mentor: '导师', official: '官方' };
 
+/* ---------- 管理后台:工作组管理 ---------- */
+function GroupsAdmin() {
+  const [groups, setGroups] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [newName, setNewName] = useState('');
+  const [addSel, setAddSel] = useState({});
+  const [err, setErr] = useState('');
+
+  const load = () => {
+    api('/api/admin/groups').then(d => setGroups(d.groups)).catch(e => setErr(e.message));
+    api('/api/admin/users').then(d => setUsers(d.users)).catch(() => {});
+  };
+  useEffect(load, []);
+
+  const createGroup = async () => {
+    if (!newName.trim()) { setErr('组名不能为空'); return; }
+    setErr('');
+    try { await api('/api/admin/groups', { method: 'POST', body: { name: newName.trim() } }); setNewName(''); load(); }
+    catch (e) { setErr(e.message); }
+  };
+  const delGroup = async g => {
+    if (!window.confirm('删除组「' + g.name + '」?(组内有文档时无法删除)')) return;
+    setErr('');
+    try { await api('/api/admin/groups/' + g.id, { method: 'DELETE' }); load(); }
+    catch (e) { setErr(e.message); }
+  };
+  const addMember = async g => {
+    const uid = parseInt(addSel[g.id], 10);
+    if (!uid) { setErr('请先选择要加入的成员'); return; }
+    setErr('');
+    try { await api('/api/admin/groups/' + g.id + '/members', { method: 'POST', body: { user_id: uid } }); load(); }
+    catch (e) { setErr(e.message); }
+  };
+  const removeMember = async (g, u) => {
+    if (!window.confirm('将 ' + u.name + ' 移出「' + g.name + '」?')) return;
+    setErr('');
+    try { await api('/api/admin/groups/' + g.id + '/members/' + u.id, { method: 'DELETE' }); load(); }
+    catch (e) { setErr(e.message); }
+  };
+
+  return (
+    <div>
+      {err && <div className="demo-banner" style={{ borderColor: '#d05858', color: '#d05858' }}>ERROR · {err}</div>}
+      <div className="composer" style={{ display: 'flex', gap: 10, alignItems: 'center', padding: 16 }}>
+        <div className="field" style={{ flex: 1, marginBottom: 0 }}>
+          <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="新工作组名称,如 运营组" maxLength={30}
+            onKeyDown={e => { if (e.key === 'Enter') createGroup(); }} />
+        </div>
+        <button className="btn btn-primary" style={{ padding: '9px 22px', fontSize: 13 }} onClick={createGroup}>+ 创建组</button>
+      </div>
+      {groups === null ? <div className="demo-banner">LOADING · 正在加载工作组…</div> : groups.map(g => (
+        <div className="admin-wrap" key={g.id} style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0 6px' }}>
+            <h3 style={{ fontSize: 16 }}>{g.name} <span className="mono" style={{ fontSize: 12, color: 'var(--faint)' }}>· {g.members.length} 成员 · {g.doc_count} 文档</span></h3>
+            <button className="admin-act danger" onClick={() => delGroup(g)}>删除组</button>
+          </div>
+          <table className="admin-table">
+            <tbody>
+              {g.members.map(u => (
+                <tr key={u.id}>
+                  <td className="mono">{u.id}</td>
+                  <td>{u.name}</td>
+                  <td className="mono">{u.email}</td>
+                  <td><span className={'role-pill ' + (u.role === 'student' ? 'student' : '')}>{roleLabel(u.role)}</span></td>
+                  <td style={{ textAlign: 'right' }}><button className="admin-act danger" onClick={() => removeMember(g, u)}>移出</button></td>
+                </tr>
+              ))}
+              {g.members.length === 0 && <tr><td className="mono" colSpan="5">暂无成员</td></tr>}
+              <tr>
+                <td colSpan="5">
+                  <select value={addSel[g.id] || ''} onChange={e => setAddSel(s => ({ ...s, [g.id]: e.target.value }))}>
+                    <option value="">选择要加入的成员…</option>
+                    {users.filter(u => !u.banned && !g.members.some(m => m.id === u.id)).map(u => (
+                      <option key={u.id} value={u.id}>{u.name}({u.email})</option>
+                    ))}
+                  </select>
+                  <button className="admin-act" style={{ marginLeft: 8 }} onClick={() => addMember(g)}>加入该组</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ---------- 管理后台:内容管理 ---------- */
 const KIND_TABS = [
-  ['work', '作品'], ['gig', '商单需求'], ['case', '合作案例'], ['doc', '知识文档'], ['course', '课程'],
+  ['work', '作品'], ['gig', '商单需求'], ['case', '合作案例'], ['course', '课程'],
 ];
 const KIND_CATS = {
   work: [['film', '短片'], ['mv', '音乐MV'], ['image', '图像'], ['ip', '角色IP'], ['other', '其他']],
@@ -2180,6 +2475,7 @@ function Admin() {
             <button className={tab === 'content' ? 'on' : ''} onClick={() => setTab('content')}>CONTENT 内容管理</button>
             <button className={tab === 'threads' ? 'on' : ''} onClick={() => setTab('threads')}>THREADS 帖子管理</button>
             <button className={tab === 'users' ? 'on' : ''} onClick={() => setTab('users')}>USERS 用户管理</button>
+            <button className={tab === 'groups' ? 'on' : ''} onClick={() => setTab('groups')}>GROUPS 组管理</button>
           </div>
           {err && <div className="demo-banner" style={{ borderColor: '#d05858', color: '#d05858' }}>ERROR · {err}</div>}
 
@@ -2194,11 +2490,15 @@ function Admin() {
                 <div className="admin-stat"><div className="k">VIEWS 累计浏览</div><div className="v">{stats.views}</div></div>
                 <div className="admin-stat"><div className="k">BANNED 封禁中</div><div className="v">{stats.banned_users}</div></div>
                 <div className="admin-stat"><div className="k">ITEMS 内容条目</div><div className="v">{stats.items}</div></div>
+                <div className="admin-stat"><div className="k">DOCS 知识文档</div><div className="v">{stats.kb_docs}</div></div>
+                <div className="admin-stat"><div className="k">GROUPS 工作组</div><div className="v">{stats.groups}</div></div>
               </div>
             )
           )}
 
           {tab === 'content' && <ContentAdmin />}
+
+          {tab === 'groups' && <GroupsAdmin />}
 
           {tab === 'threads' && (
             threads === null ? <div className="demo-banner">LOADING · 正在加载帖子…</div> : (

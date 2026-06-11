@@ -64,6 +64,34 @@ def init_db():
             content TEXT NOT NULL,
             created TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS groups (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            created TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS group_members (
+            group_id INTEGER NOT NULL REFERENCES groups(id),
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            PRIMARY KEY (group_id, user_id)
+        );
+        CREATE TABLE IF NOT EXISTS kb_docs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            level TEXT NOT NULL DEFAULT 'all',
+            group_id INTEGER REFERENCES groups(id),
+            owner_id INTEGER REFERENCES users(id),
+            author_id INTEGER NOT NULL REFERENCES users(id),
+            title TEXT NOT NULL,
+            summary TEXT NOT NULL DEFAULT '',
+            content TEXT NOT NULL DEFAULT '',
+            cat TEXT NOT NULL DEFAULT '',
+            icon TEXT NOT NULL DEFAULT '',
+            tags TEXT NOT NULL DEFAULT '',
+            date TEXT NOT NULL DEFAULT '',
+            link TEXT NOT NULL DEFAULT '',
+            sort INTEGER NOT NULL DEFAULT 0,
+            created TEXT NOT NULL,
+            updated TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             kind TEXT NOT NULL,
@@ -141,6 +169,25 @@ def init_db():
             "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
             [s + (now,) for s in seed],
         )
+    # 种子:默认工作组
+    if conn.execute("SELECT COUNT(*) FROM groups").fetchone()[0] == 0:
+        now = now_str()
+        conn.executemany(
+            "INSERT INTO groups(name,created) VALUES(?,?)",
+            [("课程组", now), ("班主任组", now), ("助教组", now)],
+        )
+    # 迁移:items 表旧知识文档(kind='doc')迁入 kb_docs 作为公开级文档
+    if conn.execute("SELECT COUNT(*) FROM kb_docs").fetchone()[0] == 0:
+        admin_row = conn.execute("SELECT id FROM users WHERE email=?", (ADMIN_EMAIL,)).fetchone()
+        aid = admin_row[0] if admin_row else 1
+        for r in conn.execute("SELECT * FROM items WHERE kind='doc'").fetchall():
+            conn.execute(
+                "INSERT INTO kb_docs(level,author_id,title,summary,cat,icon,tags,date,link,sort,created,updated) "
+                "VALUES('all',?,?,?,?,?,?,?,?,?,?,?)",
+                (aid, r["title"], r["summary"], r["cat"], r["icon"], r["tags"],
+                 r["date"], r["link"], r["sort"], r["created"], r["created"]),
+            )
+        conn.execute("DELETE FROM items WHERE kind='doc'")
     # 管理员激活:设置了 ADMIN_PASSWORD 时,启动即重置官方账号密码并确保可登录
     if ADMIN_PASSWORD:
         conn.execute(
@@ -221,6 +268,43 @@ def require_admin(user=Depends(current_user)):
     return user
 
 
+def optional_user(authorization: str = Header(None)):
+    """可选登录:未登录/失效/被封禁返回 None,不抛错"""
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    uid = parse_token(authorization[7:])
+    if uid is None:
+        return None
+    conn = db()
+    row = conn.execute("SELECT id,email,name,role,banned FROM users WHERE id=?", (uid,)).fetchone()
+    conn.close()
+    if not row or row["banned"]:
+        return None
+    return dict(row)
+
+
+def user_group_ids(conn, uid) -> set:
+    return {r[0] for r in conn.execute("SELECT group_id FROM group_members WHERE user_id=?", (uid,)).fetchall()}
+
+
+def is_staff(conn, user) -> bool:
+    """工作人员 = 导师/官方,或属于任一工作组"""
+    if not user:
+        return False
+    if user["role"] in ("mentor", "official"):
+        return True
+    return len(user_group_ids(conn, user["id"])) > 0
+
+
+def require_staff(user=Depends(current_user)):
+    conn = db()
+    ok = is_staff(conn, user)
+    conn.close()
+    if not ok:
+        raise HTTPException(403, "仅工作人员可操作")
+    return user
+
+
 def public_user(u) -> dict:
     return {"id": u["id"], "email": u["email"], "name": u["name"], "role": u["role"]}
 
@@ -273,9 +357,33 @@ class ItemIn(BaseModel):
     sort: int = 0
 
 
+class KbDocIn(BaseModel):
+    title: str
+    summary: str = ""
+    content: str = ""
+    cat: str = ""
+    icon: str = ""
+    tags: str = ""
+    date: str = ""
+    link: str = ""
+    sort: int = 0
+    level: str = "all"
+    group_id: int = 0
+    owner_id: int = 0
+
+
+class GroupIn(BaseModel):
+    name: str
+
+
+class MemberIn(BaseModel):
+    user_id: int
+
+
 VALID_CATS = {"qa", "critique", "share", "notice"}
 VALID_ROLES = {"student", "mentor", "official"}
-VALID_KINDS = {"work", "gig", "case", "doc", "course"}
+VALID_KINDS = {"work", "gig", "case", "course"}
+VALID_LEVELS = {"all", "group", "personal"}
 
 
 def check_kind(kind: str):
@@ -433,6 +541,184 @@ def create_reply(tid: int, body: ReplyIn, user=Depends(current_user)):
     return {"id": rid}
 
 
+# ---------------- 接口:知识库(三级:完整公开 / 组专属 / 个人专属) ----------------
+KB_LIST_COLS = (
+    "d.id, d.level, d.group_id, d.owner_id, d.author_id, d.title, d.summary, d.cat, d.icon, "
+    "d.tags, d.date, d.link, d.sort, d.created, d.updated, "
+    "au.name AS author_name, g.name AS group_name, ou.name AS owner_name"
+)
+KB_JOINS = (
+    "FROM kb_docs d JOIN users au ON au.id = d.author_id "
+    "LEFT JOIN groups g ON g.id = d.group_id LEFT JOIN users ou ON ou.id = d.owner_id"
+)
+
+
+@app.get("/api/kb/meta")
+def kb_meta(user=Depends(optional_user)):
+    """知识库导航元数据:是否工作人员、全部组、我的组、可浏览的工作人员列表"""
+    conn = db()
+    staff = is_staff(conn, user)
+    out = {"staff": staff, "groups": [], "my_groups": [], "people": [], "me": user["id"] if user else 0}
+    if staff:
+        out["groups"] = [dict(r) for r in conn.execute("SELECT id,name FROM groups ORDER BY id").fetchall()]
+        out["my_groups"] = sorted(user_group_ids(conn, user["id"]))
+        out["people"] = [dict(r) for r in conn.execute(
+            """
+            SELECT DISTINCT u.id, u.name FROM users u
+            LEFT JOIN group_members m ON m.user_id = u.id
+            WHERE u.banned = 0 AND (u.role IN ('mentor','official') OR m.user_id IS NOT NULL)
+            ORDER BY u.id
+            """
+        ).fetchall()]
+    conn.close()
+    return out
+
+
+@app.get("/api/kb/docs")
+def kb_list(level: str = "", group_id: int = 0, owner_id: int = 0, cat: str = "", user=Depends(optional_user)):
+    conn = db()
+    staff = is_staff(conn, user)
+    conds, args = [], []
+    if not staff:
+        conds.append("d.level='all'")  # 非工作人员只见公开级
+    if level:
+        if level not in VALID_LEVELS:
+            conn.close()
+            raise HTTPException(400, "层级不合法")
+        conds.append("d.level=?")
+        args.append(level)
+    if group_id:
+        conds.append("d.group_id=?")
+        args.append(group_id)
+    if owner_id:
+        conds.append("d.owner_id=?")
+        args.append(owner_id)
+    if cat:
+        conds.append("d.cat=?")
+        args.append(cat)
+    where = ("WHERE " + " AND ".join(conds)) if conds else ""
+    rows = conn.execute(
+        f"SELECT {KB_LIST_COLS} {KB_JOINS} {where} ORDER BY d.sort DESC, d.id DESC", args
+    ).fetchall()
+    conn.close()
+    return {"docs": [dict(r) for r in rows], "staff": staff}
+
+
+@app.get("/api/kb/docs/{did}")
+def kb_detail(did: int, user=Depends(optional_user)):
+    conn = db()
+    row = conn.execute(f"SELECT {KB_LIST_COLS}, d.content {KB_JOINS} WHERE d.id=?", (did,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, "文档不存在")
+    if row["level"] != "all" and not is_staff(conn, user):
+        conn.close()
+        raise HTTPException(403, "该文档仅工作人员可见")
+    conn.close()
+    return {"doc": dict(row)}
+
+
+def check_kb_body(body: KbDocIn):
+    if not 1 <= len(body.title.strip()) <= 120:
+        raise HTTPException(400, "标题需 1-120 个字符")
+    if len(body.summary) > 2000:
+        raise HTTPException(400, "摘要过长(最多 2000 字)")
+    if len(body.content) > 50000:
+        raise HTTPException(400, "正文过长(最多 50000 字)")
+    if body.level not in VALID_LEVELS:
+        raise HTTPException(400, "层级不合法")
+
+
+def resolve_kb_target(conn, body: KbDocIn, user):
+    """根据层级校验写入权限,返回 (group_id, owner_id)"""
+    if body.level == "all":
+        if user["role"] != "official":
+            raise HTTPException(403, "公开文档仅官方账号可发布")
+        return None, None
+    if body.level == "group":
+        if not body.group_id:
+            raise HTTPException(400, "请选择所属组")
+        if not conn.execute("SELECT id FROM groups WHERE id=?", (body.group_id,)).fetchone():
+            raise HTTPException(404, "组不存在")
+        if user["role"] != "official" and body.group_id not in user_group_ids(conn, user["id"]):
+            raise HTTPException(403, "只能发布到自己所属的组")
+        return body.group_id, None
+    # personal
+    owner = user["id"]
+    if body.owner_id and body.owner_id != user["id"]:
+        if user["role"] != "official":
+            raise HTTPException(403, "只能发布到自己的个人库")
+        if not conn.execute("SELECT id FROM users WHERE id=?", (body.owner_id,)).fetchone():
+            raise HTTPException(404, "目标用户不存在")
+        owner = body.owner_id
+    return None, owner
+
+
+@app.post("/api/kb/docs")
+def kb_create(body: KbDocIn, user=Depends(require_staff)):
+    check_kb_body(body)
+    conn = db()
+    try:
+        gid, oid = resolve_kb_target(conn, body, user)
+    except HTTPException:
+        conn.close()
+        raise
+    now = now_str()
+    cur = conn.execute(
+        "INSERT INTO kb_docs(level,group_id,owner_id,author_id,title,summary,content,cat,icon,tags,date,link,sort,created,updated) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (body.level, gid, oid, user["id"], body.title.strip(), body.summary, body.content,
+         body.cat, body.icon, body.tags, body.date, body.link, body.sort, now, now),
+    )
+    conn.commit()
+    did = cur.lastrowid
+    conn.close()
+    return {"id": did}
+
+
+@app.put("/api/kb/docs/{did}")
+def kb_update(did: int, body: KbDocIn, user=Depends(require_staff)):
+    check_kb_body(body)
+    conn = db()
+    row = conn.execute("SELECT id, author_id FROM kb_docs WHERE id=?", (did,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, "文档不存在")
+    if user["role"] != "official" and row["author_id"] != user["id"]:
+        conn.close()
+        raise HTTPException(403, "只能编辑自己发布的文档")
+    try:
+        gid, oid = resolve_kb_target(conn, body, user)
+    except HTTPException:
+        conn.close()
+        raise
+    conn.execute(
+        "UPDATE kb_docs SET level=?,group_id=?,owner_id=?,title=?,summary=?,content=?,cat=?,icon=?,tags=?,date=?,link=?,sort=?,updated=? "
+        "WHERE id=?",
+        (body.level, gid, oid, body.title.strip(), body.summary, body.content, body.cat,
+         body.icon, body.tags, body.date, body.link, body.sort, now_str(), did),
+    )
+    conn.commit()
+    conn.close()
+    return {"id": did, "updated": True}
+
+
+@app.delete("/api/kb/docs/{did}")
+def kb_delete(did: int, user=Depends(require_staff)):
+    conn = db()
+    row = conn.execute("SELECT id, author_id FROM kb_docs WHERE id=?", (did,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, "文档不存在")
+    if user["role"] != "official" and row["author_id"] != user["id"]:
+        conn.close()
+        raise HTTPException(403, "只能删除自己发布的文档")
+    conn.execute("DELETE FROM kb_docs WHERE id=?", (did,))
+    conn.commit()
+    conn.close()
+    return {"id": did, "deleted": True}
+
+
 # ---------------- 接口:内容(作品/商单/案例/文档/课程) ----------------
 ITEM_COLS = "id,kind,title,summary,cat,icon,badge,tags,author,date,extra,link,sort,created"
 
@@ -510,6 +796,8 @@ def admin_stats(admin=Depends(require_admin)):
         "replies": conn.execute("SELECT COUNT(*) FROM replies").fetchone()[0],
         "views": conn.execute("SELECT COALESCE(SUM(views),0) FROM threads").fetchone()[0],
         "items": conn.execute("SELECT COUNT(*) FROM items").fetchone()[0],
+        "kb_docs": conn.execute("SELECT COUNT(*) FROM kb_docs").fetchone()[0],
+        "groups": conn.execute("SELECT COUNT(*) FROM groups").fetchone()[0],
     }
     today = time.strftime("%Y-%m-%d")
     stats["users_today"] = conn.execute(
@@ -597,6 +885,84 @@ def admin_delete_thread(tid: int, admin=Depends(require_admin)):
     conn.commit()
     conn.close()
     return {"id": tid, "deleted": True}
+
+
+@app.get("/api/admin/groups")
+def admin_groups(admin=Depends(require_admin)):
+    conn = db()
+    groups = []
+    for g in conn.execute("SELECT id,name,created FROM groups ORDER BY id").fetchall():
+        members = conn.execute(
+            """
+            SELECT u.id, u.name, u.email, u.role FROM group_members m
+            JOIN users u ON u.id = m.user_id WHERE m.group_id=? ORDER BY u.id
+            """,
+            (g["id"],),
+        ).fetchall()
+        d = dict(g)
+        d["members"] = [dict(m) for m in members]
+        d["doc_count"] = conn.execute("SELECT COUNT(*) FROM kb_docs WHERE group_id=?", (g["id"],)).fetchone()[0]
+        groups.append(d)
+    conn.close()
+    return {"groups": groups}
+
+
+@app.post("/api/admin/groups")
+def admin_group_create(body: GroupIn, admin=Depends(require_admin)):
+    name = body.name.strip()
+    if not 1 <= len(name) <= 30:
+        raise HTTPException(400, "组名需 1-30 个字符")
+    conn = db()
+    try:
+        cur = conn.execute("INSERT INTO groups(name,created) VALUES(?,?)", (name, now_str()))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.close()
+        raise HTTPException(400, "组名已存在")
+    gid = cur.lastrowid
+    conn.close()
+    return {"id": gid, "name": name}
+
+
+@app.delete("/api/admin/groups/{gid}")
+def admin_group_delete(gid: int, admin=Depends(require_admin)):
+    conn = db()
+    if not conn.execute("SELECT id FROM groups WHERE id=?", (gid,)).fetchone():
+        conn.close()
+        raise HTTPException(404, "组不存在")
+    n = conn.execute("SELECT COUNT(*) FROM kb_docs WHERE group_id=?", (gid,)).fetchone()[0]
+    if n:
+        conn.close()
+        raise HTTPException(400, f"该组还有 {n} 篇文档,请先迁移或删除后再删组")
+    conn.execute("DELETE FROM group_members WHERE group_id=?", (gid,))
+    conn.execute("DELETE FROM groups WHERE id=?", (gid,))
+    conn.commit()
+    conn.close()
+    return {"id": gid, "deleted": True}
+
+
+@app.post("/api/admin/groups/{gid}/members")
+def admin_group_add_member(gid: int, body: MemberIn, admin=Depends(require_admin)):
+    conn = db()
+    if not conn.execute("SELECT id FROM groups WHERE id=?", (gid,)).fetchone():
+        conn.close()
+        raise HTTPException(404, "组不存在")
+    if not conn.execute("SELECT id FROM users WHERE id=?", (body.user_id,)).fetchone():
+        conn.close()
+        raise HTTPException(404, "用户不存在")
+    conn.execute("INSERT OR IGNORE INTO group_members(group_id,user_id) VALUES(?,?)", (gid, body.user_id))
+    conn.commit()
+    conn.close()
+    return {"group_id": gid, "user_id": body.user_id, "added": True}
+
+
+@app.delete("/api/admin/groups/{gid}/members/{uid}")
+def admin_group_remove_member(gid: int, uid: int, admin=Depends(require_admin)):
+    conn = db()
+    conn.execute("DELETE FROM group_members WHERE group_id=? AND user_id=?", (gid, uid))
+    conn.commit()
+    conn.close()
+    return {"group_id": gid, "user_id": uid, "removed": True}
 
 
 @app.delete("/api/admin/replies/{rid}")
