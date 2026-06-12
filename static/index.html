@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>鲸海拾贝 · AI 创作者的深海灯塔</title>
+<title>鲸海拾贝 TAOWHALE · AI 创作者的深海灯塔</title>
 <meta name="description" content="鲸海拾贝 — 聚焦 AIGC 创作的学习、展示与商业转化平台">
 <style>
 /* ============================================================
@@ -31,6 +31,9 @@
   --hero-shadow: rgba(247,248,250,.85);
   --scroll-thumb: #c8cdd5;
   --dust: 50,75,85;
+  --brand-ink: #27345B;
+  --flow: 29,32,131;
+  --flow-accent: 252,206,15;
   --radius: 14px;
   --maxw: 1180px;
   --font: "PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
@@ -57,6 +60,9 @@ html[data-theme="dark"] {
   --hero-shadow: rgba(10,10,12,.9);
   --scroll-thumb: #212129;
   --dust: 214,236,233;
+  --brand-ink: #e8edf8;
+  --flow: 122,132,240;
+  --flow-accent: 252,206,15;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html { scroll-behavior:smooth; }
@@ -96,9 +102,10 @@ button { font-family:var(--font); }
 .nav-logo { display:flex; align-items:center; gap:11px; font-weight:700; font-size:16px; letter-spacing:2px; }
 .logo-mark {
   width:30px; height:30px; border-radius:9px; flex:none;
-  display:grid; place-items:center; font-size:15px;
-  background:#16161c; border:1px solid var(--line-strong);
+  display:grid; place-items:center; color:#fff;
+  background:#27345B; border:1px solid var(--line-strong);
 }
+.logo-mark svg { width:20px; height:auto; display:block; }
 .nav-links { display:flex; gap:34px; flex:1; justify-content:center; }
 .nav-links a { font-size:13.5px; color:var(--dim); transition:color .25s; position:relative; padding:4px 0; }
 .nav-links a:hover { color:var(--text); }
@@ -123,8 +130,8 @@ button { font-family:var(--font); }
 /* ---------------- Hero ---------------- */
 .hero { position:relative; min-height:94svh; display:flex; align-items:center; overflow:hidden; }
 .hero-canvas { position:absolute; inset:0; width:100%; height:100%; opacity:.5; }
-.hero-canvas.silk { opacity:.92; animation:silk-in 2.4s ease both; }
-@keyframes silk-in { from { opacity:0; } to { opacity:.92; } }
+.hero-canvas.flow { opacity:.9; animation:flow-in 2.2s ease both; }
+@keyframes flow-in { from { opacity:0; } to { opacity:.9; } }
 /* 蓝图网格 —— 几乎是潜意识层面的 */
 .hero::before {
   content:""; position:absolute; inset:0; pointer-events:none;
@@ -142,9 +149,23 @@ button { font-family:var(--font); }
 @keyframes breath { from { opacity:.7; transform:scale(1);} to { opacity:1; transform:scale(1.12);} }
 
 .hero-inner { position:relative; z-index:2; max-width:var(--maxw); margin:0 auto; padding:150px 32px 80px; width:100%; text-align:center; }
+/* 主屏鲸环:大型发光水流主视觉,垫在主标题之后,静止悬浮(不跳动) */
+.hero-inner > * { position:relative; z-index:1; }
+.hero-mark {
+  position:absolute; left:50%; top:26px; z-index:0; pointer-events:none;
+  width:min(680px, 86vw); aspect-ratio:54.15 / 33.63; transform:translateX(-50%);
+}
+.mark-stack { display:block; position:absolute; inset:0; }
+.hero-mark .lay { position:absolute; inset:0; width:100%; height:100%; display:block; }
+/* 底层 canvas 经 CSS blur(GPU 合成)即"发光",顶层为清晰主体 */
+.hero-mark .glow-cv { filter:blur(15px) saturate(1.25); opacity:.55; }
+html[data-theme="dark"] .hero-mark .glow-cv { opacity:.9; }
+.hero-mark .body-cv { opacity:.88; }
+html[data-theme="dark"] .hero-mark .body-cv { opacity:.96; }
 .hero-tag {
   font-family:var(--mono); font-size:11.5px; letter-spacing:.32em; text-transform:uppercase;
   color:var(--accent); display:inline-flex; align-items:center; gap:12px; margin-bottom:38px;
+  text-shadow:0 0 10px var(--hero-shadow), 0 0 22px var(--hero-shadow);
 }
 .hero-tag::before, .hero-tag::after { content:""; width:36px; height:1px; background:var(--accent-dim); }
 .hero h1 {
@@ -153,7 +174,7 @@ button { font-family:var(--font); }
   text-shadow:0 0 60px var(--hero-shadow);
 }
 .hero h1 .accent-word { color:var(--accent); font-weight:600; }
-.hero .sub { font-size:16.5px; color:var(--dim); max-width:560px; margin:0 auto 52px; font-weight:400; }
+.hero .sub { font-size:16.5px; color:var(--dim); max-width:560px; margin:0 auto 52px; font-weight:400; text-shadow:0 0 12px var(--hero-shadow), 0 0 26px var(--hero-shadow); }
 .hero-actions { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
 
 .btn {
@@ -304,12 +325,12 @@ button { font-family:var(--font); }
 .footer p, .footer a { font-size:13.5px; color:var(--dim); }
 .footer ul li { margin-bottom:11px; }
 .footer a:hover { color:var(--text); }
-.wordmark {
-  font-size:clamp(72px, 13.5vw, 190px); font-weight:800; line-height:1; text-align:center;
-  letter-spacing:.06em; user-select:none; white-space:nowrap;
-  color:transparent; -webkit-text-stroke:1px var(--stroke);
-  transform:translateY(12%);
+.wordmark { user-select:none; }
+.wordmark svg {
+  display:block; width:min(920px, 88vw); height:auto; margin:0 auto;
+  transform:translateY(14%);
 }
+.wordmark svg path { stroke:var(--stroke); stroke-width:.24; }
 .copyright {
   border-top:1px solid var(--line); padding:26px 0; margin-top:-30px; position:relative; background:var(--bg);
   font-family:var(--mono); font-size:11.5px; color:var(--faint); text-align:center; letter-spacing:.08em;
@@ -667,6 +688,294 @@ function CountUp({ end = 0, suffix = '', duration = 2200 }) {
   return <b ref={ref}>{val}{suffix}</b>;
 }
 
+/* ---------- 品牌矢量资产(源自 TAOWHALE VI 手册 PDF,design/ 目录) ---------- */
+const MARK_VB = "273.79 475.32 54.15 33.63";
+const MARK_D = "M 326.94 488.19 C 326.94 484.34 324.85 480.89 322.33 478.91 C 319.04 476.38 315.83 476.32 314.32 476.38 C 309.56 476.57 305.55 478.17 301.77 481.08 C 289.29 491.13 287.31 500.49 281.63 500.62 C 281.0 500.63 280.24 500.31 279.79 499.9 C 279.19 499.36 278.84 498.55 278.91 497.66 C 279.02 496.36 280.05 495.3 281.35 495.17 C 282.41 495.06 283.36 495.56 283.9 496.37 L 285.68 494.83 C 284.56 493.48 282.86 492.58 280.97 492.58 C 277.74 492.58 274.79 495.06 274.79 498.75 C 274.79 500.31 275.39 501.78 276.39 502.83 C 277.57 504.08 279.03 504.82 280.72 504.85 C 289.87 505.04 289.5 497.74 303.05 487.04 C 309.39 482.03 314.78 481.23 317.93 482.61 C 320.18 483.59 321.81 485.95 321.74 488.58 C 321.61 493.3 319.8 497.2 317.01 500.12 C 313.9 503.37 309.52 505.4 304.66 505.4 C 303.51 505.4 302.39 505.29 301.31 505.07 C 299.08 504.63 297.0 503.75 295.18 502.53 L 294.67 502.97 L 293.94 503.62 C 294.33 503.92 294.73 504.21 295.13 504.48 C 297.47 506.06 300.15 507.16 303.03 507.65 L 303.03 507.65 C 304.17 507.85 305.33 507.95 306.52 507.95 C 319.8 507.95 326.92 496.62 326.94 488.19 Z";
+
+function WhaleMark() {
+  return (
+    <svg viewBox={MARK_VB} fill="currentColor" aria-hidden="true">
+      <path d={MARK_D} />
+    </svg>
+  );
+}
+
+/* 主屏专用:Canvas 2D"书写循环"鲸环 ——
+   空白起笔 → 沿字体中轴线一笔写出 → 停留 2s → 同向逐笔擦除 → 留白 → 无限循环。
+   材质:矢量笔触拼贴(参考"蓝色漩涡"风格)——沿笔迹排布的多层色调椭圆笔触 +
+   少量飞溅圆点,块面大、留白缝,简洁不碎。颜色沿笔迹蓝→黄渐变(起笔蓝,收笔黄)。 */
+const SCRIBE_VB = { x: 273.79, y: 475.32, w: 54.15, h: 33.63 };
+/* 书写中轴线(与字体轮廓逐像素校准):A=螺旋卷(细笔),B=斜线+大环(粗笔) */
+const SCRIBE_A = { start: [284.9, 495.2], width: 5, beziers: [
+  [283.9, 494.0, 282.3, 493.6, 280.9, 493.9],
+  [278.4, 494.4, 276.4, 496.0, 276.4, 498.2],
+  [276.5, 500.5, 278.2, 502.6, 280.9, 502.8],
+  [282.3, 503.0, 283.6, 503.3, 284.6, 504.0],
+] };
+const SCRIBE_B = { start: [284.6, 504.0], width: 7, beziers: [
+  [287.5, 502.6, 290.0, 498.5, 293.2, 494.3],
+  [296.4, 490.1, 299.5, 486.3, 303.0, 483.5],
+  [306.8, 480.6, 312.5, 478.7, 317.0, 479.6],
+  [321.2, 480.5, 324.4, 484.0, 324.4, 488.4],
+  [324.4, 492.5, 323.0, 498.0, 319.0, 502.3],
+  [315.5, 505.9, 310.0, 507.0, 305.0, 506.4],
+  [301.0, 505.9, 297.5, 504.9, 294.8, 503.5],
+] };
+
+function scribeSamples() {
+  const pts = [];
+  let len = 0, px = SCRIBE_A.start[0], py = SCRIBE_A.start[1];
+  pts.push({ x: px, y: py, len: 0, w: SCRIBE_A.width });
+  for (const seg of [SCRIBE_A, SCRIBE_B]) {
+    let x0 = seg.start[0], y0 = seg.start[1];
+    for (const b of seg.beziers) {
+      for (let i = 1; i <= 22; i++) {
+        const t = i / 22, u = 1 - t;
+        const x = u*u*u*x0 + 3*u*u*t*b[0] + 3*u*t*t*b[2] + t*t*t*b[4];
+        const y = u*u*u*y0 + 3*u*u*t*b[1] + 3*u*t*t*b[3] + t*t*t*b[5];
+        len += Math.hypot(x - px, y - py);
+        pts.push({ x, y, len, w: seg.width });
+        px = x; py = y;
+      }
+      x0 = b[4]; y0 = b[5];
+    }
+  }
+  for (let i = 0; i < pts.length; i++) {
+    let sum = 0, n = 0;
+    for (let j = Math.max(0, i - 8); j <= Math.min(pts.length - 1, i + 8); j++) { sum += pts[j].w; n++; }
+    pts[i].sw = sum / n;
+  }
+  return { pts, total: len };
+}
+
+/* 沿笔迹渐变:蓝 → 黄,返回 [r,g,b] */
+const SCRIBE_STOPS = {
+  light: [[0, [29, 32, 131]], [.5, [61, 73, 208]], [.72, [126, 139, 242]], [.84, [200, 205, 250]], [.92, [247, 219, 110]], [1, [252, 206, 15]]],
+  dark:  [[0, [72, 81, 205]], [.5, [97, 110, 238]], [.72, [155, 166, 255]], [.84, [218, 222, 255]], [.92, [250, 224, 120]], [1, [252, 206, 15]]],
+};
+function scribeRGB(stops, t) {
+  let i = 1;
+  while (i < stops.length - 1 && t > stops[i][0]) i++;
+  const [t0, c0] = stops[i - 1], [t1, c1] = stops[i];
+  const k = Math.min(1, Math.max(0, (t - t0) / (t1 - t0 || 1)));
+  return [c0[0] + (c1[0] - c0[0]) * k, c0[1] + (c1[1] - c0[1]) * k, c0[2] + (c1[2] - c0[2]) * k];
+}
+/* 色调分层(参考图的深浅叠拼):light 向白提亮 / dark 等比压暗(保色相不发灰) / base 原色 */
+function scribeTone(rgb, tone) {
+  if (tone === 'light') {
+    return 'rgb(' + Math.round(rgb[0] + (255 - rgb[0]) * .3) + ',' +
+      Math.round(rgb[1] + (255 - rgb[1]) * .3) + ',' + Math.round(rgb[2] + (255 - rgb[2]) * .3) + ')';
+  }
+  const k = tone === 'dark' ? .72 : 1;
+  return 'rgb(' + Math.round(rgb[0] * k) + ',' + Math.round(rgb[1] * k) + ',' + Math.round(rgb[2] * k) + ')';
+}
+const scribeFmt = rgb => 'rgb(' + Math.round(rgb[0]) + ',' + Math.round(rgb[1]) + ',' + Math.round(rgb[2]) + ')';
+const scribeHash = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+function WhaleScribe() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const host = ref.current;
+    const body = host.querySelector('.body-cv');
+    const glow = host.querySelector('.glow-cv');
+    const bctx = body.getContext('2d');
+    const gctx = glow.getContext('2d');
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    let w = 0, h = 0, raf;
+    const glyph = new Path2D(MARK_D);
+    const { pts, total } = scribeSamples();
+
+    const pointAt = L => {
+      L = Math.min(Math.max(L, 0), total);
+      let lo = 0, hi = pts.length - 1;
+      while (lo + 1 < hi) { const mid = (lo + hi) >> 1; (pts[mid].len <= L ? lo = mid : hi = mid); }
+      const p0 = pts[lo], p1 = pts[hi];
+      const k = (L - p0.len) / ((p1.len - p0.len) || 1);
+      return { x: p0.x + (p1.x - p0.x) * k, y: p0.y + (p1.y - p0.y) * k, sw: p0.sw + (p1.sw - p0.sw) * k };
+    };
+
+    /* 预生成笔触簇:椭圆笔触(沿切向) + 少量飞溅圆点,确定性伪随机保证帧间稳定 */
+    const dabs = [];
+    const SPACING = 3.2;
+    let di = 0;
+    for (let L = 1.2; L < total - .8; L += SPACING, di++) {
+      const P = pointAt(L);
+      const P1 = pointAt(L - .6), P2 = pointAt(L + .6);
+      const ang = Math.atan2(P2.y - P1.y, P2.x - P1.x);
+      const nx = -Math.sin(ang), ny = Math.cos(ang);
+      const lat = (scribeHash(di + 300) - .5) * .35 * P.sw;
+      const tr = scribeHash(di + 200);
+      const rgb = { light: scribeRGB(SCRIBE_STOPS.light, L / total), dark: scribeRGB(SCRIBE_STOPS.dark, L / total) };
+      const tone = tr < .3 ? 'light' : (tr < .55 ? 'dark' : 'base');
+      dabs.push({
+        L, kind: 'dab',
+        x: P.x + nx * lat, y: P.y + ny * lat, ang,
+        rx: (5.5 + scribeHash(di) * 4) / 2,
+        ry: P.sw * (.62 + scribeHash(di + 100) * .42) / 2,
+        col: { light: scribeTone(rgb.light, tone), dark: scribeTone(rgb.dark, tone) },
+      });
+      if (scribeHash(di + 400) < .2) {       // 飞溅圆点(字形外,不裁剪)
+        const dl = (.75 + scribeHash(di + 600) * .65) * P.sw * (scribeHash(di + 700) < .5 ? 1 : -1);
+        dabs.push({
+          L: L + 1.4, kind: 'drop',
+          x: P.x + nx * dl, y: P.y + ny * dl,
+          r: .7 + scribeHash(di + 500) * 1.1,
+          col: { light: scribeTone(rgb.light, 'base'), dark: scribeTone(rgb.dark, 'base') },
+        });
+      }
+    }
+
+    const resize = () => {
+      w = host.offsetWidth; h = host.offsetHeight;
+      for (const c of [body, glow]) { c.width = w * DPR; c.height = h * DPR; }
+    };
+    resize();
+
+    let theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+    const mo = new MutationObserver(() => {
+      theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+    });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    /* 时间轴(秒):写 2.2 → 停 2 → 擦 2.2 → 留白 1.6,一轮 8s */
+    const CYC = 8, T_W = 2.2, T_H = 2, T_E = 2.2;
+    const ss = t => t * t * (3 - 2 * t);
+
+    const draw = now => {
+      const t = (now / 1000) % CYC;
+      let a = -1, b = -1;                      // 书写前沿区间 [a,b]
+      if (t < T_W) { a = 0; b = total * ss(t / T_W); }
+      else if (t < T_W + T_H) { a = 0; b = total; }
+      else if (t < T_W + T_H + T_E) { a = total * ss((t - T_W - T_H) / T_E); b = total; }
+
+      bctx.setTransform(1, 0, 0, 1, 0, 0);
+      bctx.clearRect(0, 0, body.width, body.height);
+      if (b > 0) {
+        const s = (w * DPR) / SCRIBE_VB.w;
+        bctx.setTransform(s, 0, 0, s, -SCRIBE_VB.x * s, -SCRIBE_VB.y * s);
+        const stops = SCRIBE_STOPS[theme];
+        /* 第一遍:连续渐变主带(80% 宽,保证字形连贯可读),残段宽度+透明度收敛防止端帽突然消失 */
+        const TAPER = 8;
+        const shrink = (b - a) < TAPER ? Math.max(0, (b - a) / TAPER) : 1;
+        bctx.lineCap = 'round';
+        bctx.lineJoin = 'round';
+        bctx.globalAlpha = shrink;
+        let prev = pointAt(a);
+        let prevL = a;
+        for (let i = 0; i < pts.length; i++) {
+          if (pts[i].len <= a) continue;
+          const cur = pts[i].len >= b ? pointAt(b) : pts[i];
+          const curL = Math.min(pts[i].len, b);
+          bctx.strokeStyle = scribeFmt(scribeRGB(stops, ((prevL + curL) / 2) / total));
+          bctx.lineWidth = ((prev.sw + cur.sw) / 2) * .8 * shrink;
+          bctx.beginPath();
+          bctx.moveTo(prev.x, prev.y);
+          bctx.lineTo(cur.x, cur.y);
+          bctx.stroke();
+          prev = cur; prevL = curL;
+          if (pts[i].len >= b) break;
+        }
+        /* 第二遍:椭圆笔触叠拼(随前沿弹入/收走,各自缩放渐隐) → 一起裁剪进字形轮廓 */
+        for (const d of dabs) {
+          if (d.kind !== 'dab') continue;
+          const kin = Math.min(1, Math.max(0, (b - d.L) / 5));
+          const kout = a <= 0 ? 1 : Math.min(1, Math.max(0, (d.L - a) / 5));
+          let k = Math.min(kin, kout);
+          if (k <= .02) continue;
+          k = ss(k);
+          bctx.globalAlpha = Math.min(1, k) * .92;
+          bctx.fillStyle = d.col[theme];
+          bctx.beginPath();
+          bctx.ellipse(d.x, d.y, d.rx * k, d.ry * k, d.ang, 0, 6.2832);
+          bctx.fill();
+        }
+        bctx.globalAlpha = 1;
+        bctx.globalCompositeOperation = 'destination-in';
+        bctx.fill(glyph);
+        bctx.globalCompositeOperation = 'source-over';
+        /* 第三遍:飞溅圆点贴着字形外缘,不裁剪 */
+        for (const d of dabs) {
+          if (d.kind !== 'drop') continue;
+          const kin = Math.min(1, Math.max(0, (b - d.L) / 5));
+          const kout = a <= 0 ? 1 : Math.min(1, Math.max(0, (d.L - a) / 5));
+          let k = Math.min(kin, kout);
+          if (k <= .02) continue;
+          k = ss(k);
+          bctx.globalAlpha = k * .9;
+          bctx.fillStyle = d.col[theme];
+          bctx.beginPath();
+          bctx.arc(d.x, d.y, d.r * k, 0, 6.2832);
+          bctx.fill();
+        }
+        bctx.globalAlpha = 1;
+      }
+
+      /* 辉光层:复制主画布,元素级 CSS blur 由 GPU 合成 */
+      gctx.setTransform(1, 0, 0, 1, 0, 0);
+      gctx.clearRect(0, 0, glow.width, glow.height);
+      gctx.drawImage(body, 0, 0);
+
+      raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    window.addEventListener('resize', resize);
+    return () => {
+      cancelAnimationFrame(raf);
+      mo.disconnect();
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+  return (
+    <span className="mark-stack" ref={ref} aria-hidden="true">
+      <canvas className="lay glow-cv" />
+      <canvas className="lay body-cv" />
+    </span>
+  );
+}
+
+const CN_WORDMARK_VB = "236.78 520.78 122.74 34.41";
+const CN_WORDMARK_DS = [
+  "M 356.51 543.52 L 353.68 543.6 L 353.68 524.54 L 339.69 524.54 L 339.69 543.52 L 336.93 543.52 L 336.93 521.86 L 356.4 521.86 L 356.51 521.97 L 356.51 543.52 Z",
+  "M 348.03 527.67 C 348.04 528.22 348.0 528.79 348.02 529.34 C 348.1 531.6 348.1 533.87 348.1 536.12 C 348.1 540.07 347.26 543.81 344.99 547.08 C 342.59 550.52 338.94 552.81 334.85 553.72 L 334.78 550.98 C 340.92 549.52 344.92 543.92 345.27 537.75 L 345.27 527.67 L 348.03 527.67 Z",
+  "M 350.33 544.19 L 350.33 544.19 L 347.31 544.19 C 347.31 544.19 347.25 544.28 347.59 545.03 C 351.7 554.19 358.52 553.79 358.52 553.79 L 358.52 551.05 C 354.8 550.49 351.61 547.69 350.33 544.19 Z",
+  "M 315.12 531.69 L 315.12 534.37 L 323.42 534.37 L 323.53 534.37 L 323.53 531.69 L 315.12 531.69 Z",
+  "M 324.03 523.7 L 324.03 523.7 L 323.63 522.65 C 323.43 522.14 322.95 521.81 322.41 521.81 L 316.19 521.81 C 315.7 521.81 315.25 522.09 315.03 522.52 C 315.03 522.52 315.02 522.53 315.01 522.53 L 314.98 522.63 C 314.98 522.63 314.97 522.64 314.97 522.65 L 314.57 523.7 L 314.57 523.7 L 310.58 534.22 L 313.45 534.22 L 317.24 524.53 L 321.41 524.61 L 325.21 534.22 L 328.08 534.22 L 324.03 523.7 Z",
+  "M 323.24 550.89 L 315.35 550.89 L 315.35 539.13 L 323.24 539.24 L 323.24 550.89 M 326.07 536.45 L 312.59 536.45 L 312.59 553.65 L 323.95 553.65 C 325.12 553.65 326.07 552.7 326.07 551.53 L 326.07 536.45 Z",
+  "M 308.72 526.7 L 308.72 521.79 L 305.89 521.79 L 305.89 526.7 L 302.91 526.7 L 302.91 529.34 L 302.91 529.45 L 303.02 529.45 L 303.02 529.45 L 305.97 529.45 L 305.96 536.38 L 305.95 537.83 L 302.91 538.91 L 302.91 541.52 L 302.91 541.89 L 305.93 540.77 L 305.92 541.93 C 305.85 544.29 305.93 546.66 305.87 549.03 C 305.87 549.06 305.82 550.01 305.18 550.55 C 305.1 550.61 305.02 550.67 304.93 550.71 C 304.69 550.83 304.45 550.87 304.2 550.89 L 303.12 550.89 L 303.12 553.65 L 303.14 553.65 L 304.45 553.65 C 304.52 553.65 304.59 553.65 304.67 553.64 C 306.92 553.53 308.72 551.66 308.72 549.38 L 308.72 549.32 C 308.72 549.31 308.72 549.3 308.72 549.3 L 308.72 547.94 L 308.72 547.94 L 308.72 539.85 L 311.1 538.87 L 311.1 536.0 L 308.72 536.85 L 308.72 529.45 L 310.99 529.45 L 310.99 529.45 L 311.1 529.45 L 311.1 529.34 L 311.1 526.7 L 308.72 526.7 Z",
+  "M 253.27 541.81 C 253.25 545.79 252.9 549.79 251.93 553.65 L 249.25 553.65 C 250.18 549.77 250.54 545.79 250.66 541.81 L 253.27 541.81 Z",
+  "M 257.29 523.79 L 257.29 521.78 L 254.46 521.78 L 254.46 523.79 L 249.32 523.79 L 249.32 526.47 L 262.57 526.47 L 262.57 523.79 L 257.29 523.79 Z",
+  "M 260.0 553.65 L 262.57 553.65 C 261.73 549.77 261.2 545.8 261.23 541.81 L 258.48 541.81 C 258.49 542.15 258.51 542.49 258.52 542.84 C 258.64 545.23 259.04 551.17 260.0 553.65 Z",
+  "M 241.13 540.55 L 242.25 540.55 L 242.32 545.98 L 241.13 545.98 L 241.13 540.55 M 241.13 537.75 L 241.13 533.03 L 242.25 533.03 L 242.31 533.03 L 242.31 537.88 L 241.13 537.88 L 241.13 537.75 M 244.93 540.55 H 246.12 V 545.98 H 244.93 Z M 244.93 533.03 H 246.12 V 537.87 H 244.93 Z M 246.04 530.35 C 246.47 529.56 247.0 528.83 247.44 528.06 C 248.23 526.7 249.16 525.2 247.97 524.19 C 247.55 523.84 247.02 523.66 246.47 523.67 L 243.37 523.72 L 244.18 521.79 L 241.21 521.79 L 237.78 529.45 L 240.72 529.45 L 242.17 526.36 L 245.23 526.4 C 244.55 527.78 243.69 529.09 242.81 530.35 L 238.45 530.35 L 238.45 548.73 L 246.53 548.63 C 247.73 548.56 248.69 547.63 248.79 546.44 C 248.8 546.4 248.8 546.36 248.8 546.32 L 248.8 546.23 L 248.8 544.04 L 248.8 530.35 L 246.04 530.35 Z",
+  "M 258.92 537.42 L 252.89 537.42 L 252.89 537.42 L 252.89 530.79 L 255.01 530.79 L 258.92 530.79 L 258.92 537.42 M 251.01 528.04 L 250.25 528.04 L 250.14 528.04 L 250.14 528.15 L 250.14 528.73 L 250.14 539.64 L 250.14 539.99 L 250.14 540.1 L 250.25 540.1 L 250.6 540.1 L 254.26 540.1 L 254.46 540.1 L 254.53 553.65 L 257.29 553.65 L 257.29 540.1 L 258.86 540.1 L 259.23 540.1 C 260.58 540.1 261.68 539.0 261.68 537.65 L 261.68 537.6 L 261.68 535.92 L 261.68 528.04 L 251.01 528.04 Z",
+  "M 281.37 521.78 L 280.7 523.72 L 294.33 523.72 L 294.33 526.4 L 276.83 526.4 L 278.47 521.78 L 281.37 521.78 Z",
+  "M 286.29 540.1 L 287.85 543.97 L 285.06 543.97 L 283.38 540.1 L 286.29 540.1 Z",
+  "M 286.21 531.83 L 287.7 535.56 L 284.87 535.56 L 283.38 531.83 L 286.21 531.83 Z",
+  "M 289.62 545.09 L 289.26 545.09 L 289.26 545.09 L 281.0 545.16 L 281.0 539.13 L 290.31 539.13 L 290.31 545.09 L 289.62 545.09 M 281.0 530.64 L 290.38 530.64 L 290.31 536.38 L 281.0 536.38 L 281.0 530.64 M 294.61 539.13 L 294.61 536.38 L 293.06 536.38 L 293.06 528.0 L 278.17 527.96 L 278.25 536.38 L 276.61 536.38 L 276.61 539.13 L 278.25 539.13 L 278.25 546.4 L 278.25 547.65 L 278.25 547.84 L 278.51 547.84 L 279.2 547.84 L 289.26 547.84 L 290.31 547.84 L 290.31 548.96 L 290.31 549.59 L 290.31 549.66 C 290.31 550.34 289.76 550.89 289.08 550.89 L 286.88 550.89 L 286.88 553.65 L 288.17 553.65 L 289.21 553.65 C 291.24 553.65 292.91 552.07 293.05 550.07 C 293.06 550.01 293.06 549.79 293.06 549.79 L 293.06 548.9 L 293.06 547.84 L 294.44 547.84 L 294.55 547.84 L 294.55 547.73 L 294.55 545.2 L 294.55 545.09 L 294.33 545.09 L 294.01 545.09 L 293.06 545.09 L 293.06 539.13 L 294.61 539.13 Z",
+  "M 275.72 538.2 C 275.46 535.46 274.46 532.81 273.15 530.42 L 270.89 530.42 L 270.1 530.42 C 270.1 530.42 270.88 531.79 271.42 533.1 C 273.75 538.73 273.27 540.36 272.4 544.64 C 271.79 547.68 270.85 550.65 270.06 553.65 L 272.89 553.65 C 273.58 551.25 274.31 548.86 274.86 546.43 C 275.48 543.69 275.98 541.03 275.72 538.2 Z",
+  "M 273.07 521.86 L 270.28 521.86 C 270.76 522.93 271.29 523.98 271.73 525.06 C 272.15 526.09 272.49 527.14 272.85 528.19 L 275.64 528.19 C 274.9 524.72 273.07 521.86 273.07 521.86 Z",
+];
+
+function CnWordmark() {
+  return (
+    <svg viewBox={CN_WORDMARK_VB} fill="none" role="img" aria-label="鲸海拾贝">
+      {CN_WORDMARK_DS.map((d, i) => <path key={i} d={d} />)}
+    </svg>
+  );
+}
+
+/* favicon:藏青圆角方块 + 白色鲸环(运行时注入,与 MARK_D 单一来源) */
+(function injectFavicon() {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+    + '<rect width="64" height="64" rx="14" fill="#27345B"/>'
+    + '<path transform="translate(32 32) scale(0.92) translate(-300.86 -492.13)" fill="#ffffff" d="' + MARK_D + '"/>'
+    + '</svg>';
+  const link = document.createElement('link');
+  link.rel = 'icon';
+  link.type = 'image/svg+xml';
+  link.href = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  document.head.appendChild(link);
+})();
+
 /* ---------- 深海微尘:极慢漂浮,无连线,低于知觉阈值 ---------- */
 function DustCanvas() {
   const ref = useRef(null);
@@ -754,7 +1063,7 @@ function Nav({ route, theme, onToggleTheme, user, onAuth, onLogout }) {
   return (
     <header className={'nav ' + (scrolled ? 'scrolled' : '')}>
       <div className="nav-inner">
-        <a className="nav-logo" href="#/"><span className="logo-mark">🐋</span>鲸海拾贝</a>
+        <a className="nav-logo" href="#/"><span className="logo-mark"><WhaleMark /></span>鲸海拾贝</a>
         <nav className={'nav-links ' + (open ? 'show' : '')} onClick={() => setOpen(false)}>
           {NAV_LINKS.map(l => (
             <a key={l.to} href={'#' + l.to} className={route === l.to ? 'active' : ''}>{l.label}</a>
@@ -776,7 +1085,7 @@ function Footer() {
       <div className="container">
         <div className="footer-grid">
           <div>
-            <div className="brand"><span className="logo-mark">🐋</span>鲸海拾贝</div>
+            <div className="brand"><span className="logo-mark"><WhaleMark /></span>鲸海拾贝</div>
             <p>聚焦 AIGC 创作的学习、展示与商业转化平台。<br />口号占位:在 AI 的鲸海里,拾起属于你的珍珠。</p>
           </div>
           <div>
@@ -807,86 +1116,39 @@ function Footer() {
           </div>
         </div>
       </div>
-      <div className="wordmark">鲸海拾贝</div>
+      <div className="wordmark"><CnWordmark /></div>
       <div className="copyright">© 2026 鲸海拾贝 TAOWHALE · ALL RIGHTS RESERVED · 备案号占位</div>
     </footer>
   );
 }
 
-/* ---------- 流体绸缎:WebGL 域扭曲噪声,海青极光丝带 ---------- */
-function SilkCanvas() {
+/* ---------- 鲸迹洋流:显式轨迹历史 + 每帧全量重绘(无残留),蓝主体 + 黄点缀 ---------- */
+function FlowCanvas() {
   const ref = useRef(null);
   useEffect(() => {
     const canvas = ref.current;
-    const gl = canvas.getContext('webgl', { alpha: true, antialias: false, premultipliedAlpha: false });
-    if (!gl) return;
-    const DPR = Math.min(window.devicePixelRatio || 1, 1.6);
-
-    const vs = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
-    const fs = [
-      'precision highp float;',
-      'uniform vec2 uR;uniform float uT;uniform vec2 uM;uniform float uL;',
-      'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);}',
-      'float noise(vec2 p){vec2 i=floor(p);vec2 f=fract(p);vec2 u=f*f*(3.-2.*f);',
-      ' return mix(mix(hash(i),hash(i+vec2(1.,0.)),u.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),u.x),u.y);}',
-      'float fbm(vec2 p){float v=0.;float a=.5;for(int i=0;i<5;i++){v+=a*noise(p);p=p*2.03+vec2(17.,9.);a*=.55;}return v;}',
-      'void main(){',
-      ' vec2 uv=(gl_FragCoord.xy-.5*uR)/min(uR.x,uR.y);',
-      ' float t=uT*.045;',
-      ' vec2 m=(uM-.5)*.22;',
-      ' vec2 q=vec2(fbm(uv*1.5+t),fbm(uv*1.5-t*.7+5.2));',
-      ' vec2 r=vec2(fbm(uv*2.1+q*1.9+m+t*.55),fbm(uv*2.1-q*1.5-m+2.7-t*.4));',
-      ' float f=fbm(uv*2.3+r*2.3);',
-      ' float band=smoothstep(.40,.50,f)*smoothstep(.62,.50,f);',
-      ' float band2=smoothstep(.28,.37,f)*smoothstep(.48,.37,f);',
-      ' float band3=smoothstep(.55,.64,f)*smoothstep(.76,.64,f);',
-      ' vec3 colD=vec3(.31,.85,.77)*band*1.3+vec3(.25,.62,.94)*band2*.85+vec3(.48,.36,.85)*band3*.6;',
-      ' colD+=vec3(.31,.85,.77)*f*f*.07;',
-      ' vec3 colL=vec3(.07,.62,.42)*band*1.1+vec3(.06,.55,.52)*band2*.9+vec3(.2,.5,.85)*band3*.55;',
-      ' colL+=vec3(.45,.85,.6)*f*f*.1;',
-      ' vec3 col=mix(colD,colL,uL);',
-      ' float d=length(uv*vec2(1.,1.45));',
-      ' float mask=smoothstep(1.,.18,d);',
-      ' float a=clamp(band+band2*.7+band3*.5,0.,1.)*mask*mix(1.,.9,uL);',
-      ' gl_FragColor=vec4(col*mask,a);',
-      '}'
-    ].join('\n');
-
-    const mk = (type, src) => {
-      const s = gl.createShader(type);
-      gl.shaderSource(s, src); gl.compileShader(s);
-      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.warn(gl.getShaderInfoLog(s)); return null; }
-      return s;
-    };
-    const v = mk(gl.VERTEX_SHADER, vs), f = mk(gl.FRAGMENT_SHADER, fs);
-    if (!v || !f) return;
-    const prog = gl.createProgram();
-    gl.attachShader(prog, v); gl.attachShader(prog, f); gl.linkProgram(prog);
-    gl.useProgram(prog);
-
-    const buf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-    const loc = gl.getAttribLocation(prog, 'p');
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-
-    const uR = gl.getUniformLocation(prog, 'uR');
-    const uT = gl.getUniformLocation(prog, 'uT');
-    const uM = gl.getUniformLocation(prog, 'uM');
-    const uL = gl.getUniformLocation(prog, 'uL');
-
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.clearColor(0, 0, 0, 0);
-
+    const ctx = canvas.getContext('2d');
     let w, h, raf;
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
     const resize = () => {
       w = canvas.offsetWidth; h = canvas.offsetHeight;
       canvas.width = w * DPR; canvas.height = h * DPR;
-      gl.viewport(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.lineCap = 'round';
     };
     resize();
+
+    let flowRGB = '29,32,131', accentRGB = '252,206,15';
+    const readFlow = () => {
+      const cs = getComputedStyle(document.documentElement);
+      const v = cs.getPropertyValue('--flow').trim();
+      const a = cs.getPropertyValue('--flow-accent').trim();
+      if (v) flowRGB = v;
+      if (a) accentRGB = a;
+    };
+    readFlow();
+    const mo = new MutationObserver(readFlow);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     const mouse = { x: .5, y: .5, tx: .5, ty: .5 };
     const onMouse = e => {
@@ -896,40 +1158,71 @@ function SilkCanvas() {
     };
     const host = canvas.parentElement;
     host.addEventListener('mousemove', onMouse);
-    window.addEventListener('resize', resize);
 
-    let lightCur = document.documentElement.dataset.theme === 'dark' ? 0 : 1;
-    let lightTgt = lightCur;
-    const mo = new MutationObserver(() => {
-      lightTgt = document.documentElement.dataset.theme === 'dark' ? 0 : 1;
-    });
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    const N = Math.min(70, Math.floor(w / 19));
+    const TRAIL = 34;                            // 尾迹点数:超出即丢弃,旧线条不可能残留
+    const spawn = p => {
+      p.x = Math.random() * w * 1.06 - w * .03;
+      p.y = Math.random() * h;
+      p.age = 0;
+      p.life = 420 + Math.random() * 520;
+      p.speed = .3 + Math.random() * .55;
+      p.bold = Math.random() < .14;              // 少而果断的主笔
+      p.accent = p.bold && Math.random() < .35;  // 部分主笔用黄色点缀
+      p.trail = [];
+      return p;
+    };
+    const pts = Array.from({ length: N }, () => { const p = spawn({}); p.age = Math.random() * p.life; return p; });
 
-    const t0 = performance.now();
+    // 流向场:恒定东向洋流 + 极缓起伏的涡旋(呼应鲸环回笔),鼠标轻扰
+    const angle = (x, y, t) => {
+      const nx = x / w, ny = y / h;
+      let a = Math.sin(ny * 4.6 + t * .12 + Math.sin(nx * 2.6 + t * .07) * 1.35) * .58
+            + Math.sin(nx * 1.9 - t * .09 + 2.1) * .34
+            + Math.cos((nx * 1.4 + ny * 2.2) * 2.6 + t * .05) * .26;
+      const dx = nx - mouse.x, dy = ny - mouse.y;
+      a += Math.exp(-(dx * dx + dy * dy) * 10) * dx * 3.5;
+      return a;
+    };
+
     const draw = now => {
-      mouse.x += (mouse.tx - mouse.x) * .035;
-      mouse.y += (mouse.ty - mouse.y) * .035;
-      lightCur += (lightTgt - lightCur) * .06;
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.uniform2f(uR, canvas.width, canvas.height);
-      gl.uniform1f(uT, (now - t0) / 1000);
-      gl.uniform2f(uM, mouse.x, 1 - mouse.y);
-      gl.uniform1f(uL, lightCur);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      mouse.x += (mouse.tx - mouse.x) * .04;
+      mouse.y += (mouse.ty - mouse.y) * .04;
+      const t = now / 1000;
+      ctx.clearRect(0, 0, w, h);                 // 全量清屏
+      for (const p of pts) {
+        const a = angle(p.x, p.y, t);
+        p.x += Math.cos(a) * p.speed * 1.5 + .28;
+        p.y += Math.sin(a) * p.speed * 1.15;
+        p.age++;
+        p.trail.push(p.x, p.y);
+        if (p.trail.length > TRAIL * 2) p.trail.splice(0, 2);
+        if (p.x > w + 12 || p.y < -12 || p.y > h + 12 || p.age > p.life) { spawn(p); continue; }
+        const fade = Math.min(p.age / 60, 1, (p.life - p.age) / 90);
+        const rgb = p.accent ? accentRGB : flowRGB;
+        const baseA = (p.bold ? .3 : .14) * fade;
+        const n = p.trail.length / 2;
+        ctx.lineWidth = p.bold ? 1.8 : .8;
+        for (let i = 1; i < n; i++) {
+          ctx.strokeStyle = 'rgba(' + rgb + ',' + (baseA * i / n) + ')';
+          ctx.beginPath();
+          ctx.moveTo(p.trail[(i - 1) * 2], p.trail[(i - 1) * 2 + 1]);
+          ctx.lineTo(p.trail[i * 2], p.trail[i * 2 + 1]);
+          ctx.stroke();
+        }
+      }
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
-
+    window.addEventListener('resize', resize);
     return () => {
       cancelAnimationFrame(raf);
       mo.disconnect();
       window.removeEventListener('resize', resize);
       host.removeEventListener('mousemove', onMouse);
-      const ext = gl.getExtension('WEBGL_lose_context');
-      if (ext) ext.loseContext();
     };
   }, []);
-  return <canvas ref={ref} className="hero-canvas silk" />;
+  return <canvas ref={ref} className="hero-canvas flow" />;
 }
 
 /* ---------- 首页 ---------- */
@@ -944,10 +1237,11 @@ function Home() {
   return (
     <React.Fragment>
       <section className="hero">
-        <SilkCanvas />
+        <FlowCanvas />
         <DustCanvas />
         <div className="aurora" />
         <div className="hero-inner">
+          <div className="hero-mark"><WhaleScribe /></div>
           <Reveal><span className="hero-tag">Taowhale · AIGC Studio</span></Reveal>
           <Reveal delay={140}><h1>在 AI 的鲸海里,<br />拾起属于你的<span className="accent-word">那颗珍珠</span>。</h1></Reveal>
           <Reveal delay={280}><p className="sub">鲸海拾贝是聚焦 AIGC 创作的学习、展示与商业转化平台。系统掌握 AI 工具,沉淀方法论,对接真实商业需求。</p></Reveal>
@@ -2124,7 +2418,7 @@ function AuthModal({ onClose, onLogin }) {
       <div className="auth-modal" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose} aria-label="关闭">✕</button>
         <div className="auth-head">
-          <span className="logo-mark">🐋</span>
+          <span className="logo-mark"><WhaleMark /></span>
           <h3>欢迎来到鲸海拾贝</h3>
           <p>{mode === 'login' ? '登录后可发帖、回帖与互评' : '创建账号,加入创作者社区'}</p>
         </div>

@@ -1,0 +1,58 @@
+{
+ "7QG4Yx2JpL9nb1oZHgXpmoy0J9dEq3XD": {
+  "uuid": "7QG4Yx2JpL9nb1oZHgXpmoy0J9dEq3XD",
+  "name": "AIGC入学导读手册.adoc",
+  "parent": "yQod3RxJKG1NEojnF4xlgK2eJkb4Mw9r",
+  "type": "file",
+  "hasChildren": false
+ },
+ "yQod3RxJKG1NEojnF4xlgK2eJkb4Mw9r": {
+  "uuid": "yQod3RxJKG1NEojnF4xlgK2eJkb4Mw9r",
+  "name": "#ROOT#",
+  "parent": null,
+  "type": "folder",
+  "hasChildren": true
+ },
+ "PwkYGxZV3Zr3M2dEh3MNpZXyWAgozOKL": {
+  "uuid": "PwkYGxZV3Zr3M2dEh3MNpZXyWAgozOKL",
+  "name": "课前筹备必看",
+  "parent": "yQod3RxJKG1NEojnF4xlgK2eJkb4Mw9r",
+  "type": "folder",
+  "hasChildren": true
+ },
+ "1OQX0akWmxKX7YophvyqjOgO8GlDd3mE": {
+  "uuid": "1OQX0akWmxKX7YophvyqjOgO8GlDd3mE",
+  "name": "AI工具操作知识库",
+  "parent": "yQod3RxJKG1NEojnF4xlgK2eJkb4Mw9r",
+  "type": "folder",
+  "hasChildren": true
+ },
+ "NDoBb60VLQ1kEoN7UB05M4m2JlemrZQ3": {
+  "uuid": "NDoBb60VLQ1kEoN7UB05M4m2JlemrZQ3",
+  "name": "自媒体运营思路",
+  "parent": "yQod3RxJKG1NEojnF4xlgK2eJkb4Mw9r",
+  "type": "folder",
+  "hasChildren": true
+ },
+ "9E05BDRVQ21yroz3FyvXnkRbJ63zgkYA": {
+  "uuid": "9E05BDRVQ21yroz3FyvXnkRbJ63zgkYA",
+  "name": "课程必看笔记",
+  "parent": "yQod3RxJKG1NEojnF4xlgK2eJkb4Mw9r",
+  "type": "folder",
+  "hasChildren": true
+ },
+ "P0MALyR8kl1Nm0okI2yo0blNW3bzYmDO": {
+  "uuid": "P0MALyR8kl1Nm0okI2yo0blNW3bzYmDO",
+  "name": "AIGC全链路地图导览.able",
+  "parent": "yQod3RxJKG1NEojnF4xlgK2eJkb4Mw9r",
+  "type": "file",
+  "hasChildren": false
+ },
+ "DnRL6jAJMG1PEokRFGmgqLbeWyMoPYe1": {
+  "uuid": "DnRL6jAJMG1PEokRFGmgqLbeWyMoPYe1",
+  "name": "学员优秀案例.adoc",
+  "parent": "yQod3RxJKG1NEojnF4xlgK2eJkb4Mw9r",
+  "type": "file",
+  "hasChildren": false
+ }
+}
