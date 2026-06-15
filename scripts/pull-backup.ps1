@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 $SshKey = "C:\Users\Administrator\.ssh\id_ed25519_whalesea"
 $Remote = "ubuntu@43.128.2.110"
 $RemoteDir = "/opt/whalesea/backups"
-$LocalDir = "E:\AIGC工作站\whalesea-site\backups"
+$LocalDir = "E:\AIGC工作站\taowhale-site\backups"
 $TempDir = "C:\temp\taowhale-backup"
 $Log = Join-Path $LocalDir "pull.log"
 $SshOpts = @("-i", $SshKey, "-o", "ConnectTimeout=15", "-o", "StrictHostKeyChecking=accept-new")

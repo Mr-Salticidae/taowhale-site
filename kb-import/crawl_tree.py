@@ -97,7 +97,7 @@ def main():
                 queue.append(u)
         print(f"visited={len(visited)} queue={len(queue)} nodes={len(all_nodes)} (+{new})")
         time.sleep(0.4)
-    with open(r"E:\AIGC工作站\whalesea-site\kb-import\tree.json", "w", encoding="utf-8") as f:
+    with open(r"E:\AIGC工作站\taowhale-site\kb-import\tree.json", "w", encoding="utf-8") as f:
         json.dump(all_nodes, f, ensure_ascii=False, indent=1)
     print("TOTAL:", len(all_nodes))
 
