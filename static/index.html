@@ -421,6 +421,62 @@ html[data-theme="dark"] .hero-mark .body-cv { opacity:.96; }
 .post-head .p-name { font-size:14px; font-weight:600; display:flex; align-items:center; gap:10px; }
 .post-head .p-time { font-family:var(--mono); font-size:11px; color:var(--faint); }
 .post-body p { font-size:14.5px; color:var(--dim); margin-bottom:16px; }
+/* Markdown 正文渲染 */
+.md-body { font-size:14.5px; color:var(--dim); line-height:1.75; word-wrap:break-word; overflow-wrap:break-word; }
+.md-body > *:first-child { margin-top:0; }
+.md-body p { font-size:14.5px; color:var(--dim); margin:0 0 16px; }
+.md-body h1, .md-body h2, .md-body h3, .md-body h4 { color:var(--text); font-weight:600; line-height:1.4; margin:30px 0 12px; }
+.md-body h1 { font-size:23px; padding-bottom:.3em; border-bottom:1px solid var(--line); }
+.md-body h2 { font-size:19px; padding-bottom:.3em; border-bottom:1px solid var(--line); }
+.md-body h3 { font-size:16.5px; }
+.md-body h4 { font-size:15px; }
+.md-body a { color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-dim); }
+.md-body a:hover { border-bottom-color:var(--accent); }
+.md-body ul, .md-body ol { margin:0 0 16px; padding-left:1.6em; }
+.md-body li { margin:5px 0; }
+.md-body li > ul, .md-body li > ol { margin:5px 0; }
+.md-body code { font-family:var(--mono); font-size:.86em; background:var(--panel-2); border:1px solid var(--line); border-radius:5px; padding:.12em .4em; }
+.md-body pre { background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; overflow-x:auto; margin:0 0 18px; }
+.md-body pre code { background:none; border:none; padding:0; font-size:13px; line-height:1.6; color:var(--text); }
+.md-body blockquote { margin:0 0 18px; padding:4px 16px; border-left:3px solid var(--accent-dim); color:var(--faint); background:linear-gradient(90deg, var(--accent-c, rgba(13,157,135,.05)), transparent 70%); }
+.md-body blockquote p { margin-bottom:6px; }
+.md-body table { border-collapse:collapse; width:100%; margin:0 0 18px; font-size:13.5px; display:block; overflow-x:auto; }
+.md-body th, .md-body td { border:1px solid var(--line); padding:8px 12px; text-align:left; }
+.md-body th { background:var(--panel-2); color:var(--text); font-weight:600; }
+.md-body img { max-width:100%; height:auto; border-radius:8px; margin:6px 0; }
+.md-body hr { border:none; border-top:1px solid var(--line); margin:26px 0; }
+.md-body strong { color:var(--text); font-weight:600; }
+/* 知识库搜索框 */
+.kb-search { position:relative; display:flex; align-items:center; margin:4px 0 14px; }
+.kb-search-icon { position:absolute; left:14px; font-size:18px; color:var(--faint); pointer-events:none; }
+.kb-search input { width:100%; box-sizing:border-box; padding:12px 40px 12px 40px; font-size:14px; font-family:var(--font); color:var(--text); background:var(--panel); border:1px solid var(--line-strong); border-radius:var(--radius); outline:none; transition:border-color .18s; }
+.kb-search input::placeholder { color:var(--faint); }
+.kb-search input:focus { border-color:var(--accent); }
+.kb-search-x { position:absolute; right:10px; width:24px; height:24px; border:none; background:var(--panel-2); color:var(--dim); border-radius:50%; cursor:pointer; font-size:12px; line-height:1; display:flex; align-items:center; justify-content:center; }
+.kb-search-x:hover { color:var(--text); }
+/* 知识库两层分类导航 */
+.kb-cats { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 10px; }
+.kb-cats button { font-family:var(--font); font-size:13px; color:var(--dim); background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:7px 14px; cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:6px; }
+.kb-cats button:hover { border-color:var(--line-strong); color:var(--text); }
+.kb-cats button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+.kb-cats button em { font-style:normal; font-size:11px; opacity:.7; font-family:var(--mono); }
+.kb-cats.kb-subcats { margin:-2px 0 12px; padding:10px 12px; background:var(--panel-2); border-radius:var(--radius); }
+.kb-cats.kb-subcats button { font-size:12.5px; padding:5px 12px; background:transparent; }
+.kb-cats.kb-subcats button.on { background:var(--accent); color:#fff; }
+/* 标签筛选(默认折叠,展开后按轴分组) */
+.kb-tags-wrap { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 12px; }
+.kb-tags-toggle { font-family:var(--mono); font-size:12px; color:var(--dim); background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:6px 12px; cursor:pointer; }
+.kb-tags-toggle:hover { border-color:var(--line-strong); color:var(--text); }
+.kb-tags-toggle em { font-style:normal; color:var(--faint); margin-left:4px; }
+.kb-tags-active { font-family:var(--mono); font-size:11.5px; color:var(--text); background:var(--accent-dim); border:1px solid var(--accent); border-radius:6px; padding:5px 10px; cursor:pointer; }
+.kb-tags-panel { flex-basis:100%; display:flex; flex-direction:column; gap:8px; padding:14px; margin-top:2px; background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius); }
+.kb-tag-axis { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px; }
+.kb-tag-axis-name { font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--faint); min-width:52px; flex-shrink:0; }
+.kb-tag-chip { font-family:var(--font); font-size:12px; color:var(--dim); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:3px 9px; cursor:pointer; transition:all .15s; }
+.kb-tag-chip:hover { border-color:var(--accent-dim); color:var(--text); }
+.kb-tag-chip.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+.kb-tag-pill { font-family:var(--mono); font-size:10.5px; color:var(--accent); background:var(--accent-c, rgba(13,157,135,.08)); border:1px solid var(--accent-dim); border-radius:5px; padding:2px 7px; margin-right:5px; }
+.cat-sort { width:46px; text-align:center; font-family:var(--mono); font-size:12px; padding:5px 4px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--text); }
 .reply-count { font-family:var(--mono); font-size:11.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--faint); margin:52px 0 8px; }
 .reply-item { display:flex; gap:16px; padding:26px 0; border-bottom:1px solid var(--line); }
 .reply-item.mentor-reply { background:linear-gradient(90deg, rgba(79,216,196,.045), transparent 55%); margin:0 -18px; padding-left:18px; padding-right:18px; border-left:2px solid var(--accent-dim); }
@@ -596,6 +652,8 @@ html[data-theme="dark"] .hero-mark .body-cv { opacity:.96; }
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.28.4/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -1737,6 +1795,17 @@ const DOCS = [
   { cat: 'review', icon: '📊', title: '文档标题占位:某商单项目复盘——从需求到验收', desc: '摘要占位:商业项目的沟通、报价、交付与验收经验。', pill: ['done', 'REVIEW'], date: '2026-03' },
 ];
 
+/* Markdown 渲染:marked 解析 + DOMPurify 消毒;CDN 未加载时回退纯文本分段 */
+function Markdown({ text }) {
+  const src = String(text || '');
+  if (!src.trim()) return <p style={{ color: 'var(--faint)' }}>(暂无正文)</p>;
+  if (window.marked && window.DOMPurify) {
+    const html = window.DOMPurify.sanitize(window.marked.parse(src, { breaks: true, gfm: true }));
+    return <div className="md-body" dangerouslySetInnerHTML={{ __html: html }} />;
+  }
+  return <div className="md-body">{src.split('\n').map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}</div>;
+}
+
 const KB_LEVELS = [['all', 'FULL 完整知识库'], ['group', 'GROUP 组专属'], ['personal', 'MINE 个人专属']];
 const KB_LEVEL_NAME = { all: '公开', group: '组', personal: '个人' };
 
@@ -1752,7 +1821,11 @@ function Knowledge() {
   const [lvl, setLvl] = useState('all');
   const [gid, setGid] = useState(0);
   const [pid, setPid] = useState(0);
-  const [f, setF] = useState('all');
+  const [catId, setCatId] = useState(0);   // 选中分类(0=全部)
+  const [tag, setTag] = useState('');      // 标签筛选('' =全部)
+  const [showTags, setShowTags] = useState(false);  // 标签面板默认折叠
+  const [catData, setCatData] = useState({ cats: [], total: 0, uncategorized: 0 });  // 分类树(两层)+计数
+  const [search, setSearch] = useState('');
   const [docs, setDocs] = useState(null);
   const [demo, setDemo] = useState(false);
   const [detail, setDetail] = useState(null);
@@ -1771,15 +1844,38 @@ function Knowledge() {
     }).catch(() => setMeta({ staff: false, groups: [], my_groups: [], people: [], me: 0 }));
   }, [user]);
 
+  const scopeQS = () => {  // 'level=group&group_id=3' 形式(无前导符),搜索/列表/分类树共用
+    if (lvl === 'group') return 'level=group&group_id=' + gid;
+    if (lvl === 'personal') return 'level=personal&owner_id=' + pid;
+    return '';
+  };
+  // 分类树随层级范围刷新
+  useEffect(() => {
+    const qs = scopeQS();
+    api('/api/kb/cats' + (qs ? '?' + qs : ''))
+      .then(d => setCatData({ cats: d.cats || [], total: d.total || 0, uncategorized: d.uncategorized || 0 }))
+      .catch(() => setCatData({ cats: [], total: 0, uncategorized: 0 }));
+  }, [lvl, gid, pid, user]);
+  // 切换层级时复位分类/标签选择
+  useEffect(() => { setCatId(0); setTag(''); }, [lvl, gid, pid]);
+
   const loadDocs = () => {
-    let q = '/api/kb/docs';
-    if (lvl === 'group') q += '?level=group&group_id=' + gid;
-    else if (lvl === 'personal') q += '?level=personal&owner_id=' + pid;
-    api(q)
+    const q = search.trim();
+    if (q) {
+      api('/api/kb/search?q=' + encodeURIComponent(q) + (scopeQS() ? '&' + scopeQS() : ''))
+        .then(d => { setDocs(d.docs); setDemo(false); })
+        .catch(e => { setDocs([]); setErr(e.message); });
+      return;
+    }
+    const parts = [scopeQS(), catId ? 'cat_id=' + catId : ''].filter(Boolean);
+    api('/api/kb/docs' + (parts.length ? '?' + parts.join('&') : ''))
       .then(d => { setDocs(d.docs); setDemo(false); })
       .catch(() => { setDocs(DOCS.map(x => ({ ...x, summary: x.desc, level: 'all' }))); setDemo(true); });
   };
-  useEffect(loadDocs, [lvl, gid, pid, user]);
+  useEffect(() => {  // 搜索防抖 250ms;层级/分类切换也走这里
+    const t = setTimeout(loadDocs, search.trim() ? 250 : 0);
+    return () => clearTimeout(t);
+  }, [search, catId, lvl, gid, pid, user]);
 
   const openDoc = d => {
     setErr('');
@@ -1790,7 +1886,7 @@ function Knowledge() {
   const canWrite = d => user && (user.role === 'official' || d.author_id === user.id);
 
   const blankDoc = () => ({
-    title: '', summary: '', content: '', cat: 'prompt', icon: '', tags: '', date: '', link: '', sort: 0,
+    title: '', summary: '', content: '', cat: '', cat_id: 0, icon: '', tags: '', date: '', link: '', sort: 0,
     level: staff && !isOfficial ? 'personal' : 'all', group_id: meta && (meta.my_groups[0] || (meta.groups[0] || {}).id) || 0, owner_id: 0,
   });
   const set = (k, v) => setEditing(e => ({ ...e, [k]: v }));
@@ -1799,7 +1895,7 @@ function Knowledge() {
     if (!editing.title.trim()) { setErr('标题不能为空'); return; }
     setBusy(true); setErr('');
     try {
-      const body = { ...editing, sort: parseInt(editing.sort, 10) || 0, group_id: parseInt(editing.group_id, 10) || 0 };
+      const body = { ...editing, sort: parseInt(editing.sort, 10) || 0, group_id: parseInt(editing.group_id, 10) || 0, cat_id: parseInt(editing.cat_id, 10) || 0, cat_path: [] };
       if (editing.id) await api('/api/kb/docs/' + editing.id, { method: 'PUT', body });
       else await api('/api/kb/docs', { method: 'POST', body });
       setEditing(null); setDetail(null); loadDocs();
@@ -1827,7 +1923,26 @@ function Knowledge() {
   }) : [];
   const sortedPeople = meta ? [...meta.people].sort((a, b) => (a.id === meta.me ? -1 : b.id === meta.me ? 1 : a.id - b.id)) : [];
 
-  const list = (docs || []).filter(d => f === 'all' || d.cat === f);
+  const docTags = d => (d.tags || '').split(',').map(s => s.trim()).filter(Boolean);
+  const list = (docs || []).filter(d => !tag || docTags(d).indexOf(tag) >= 0);
+  const allTags = [...new Set((docs || []).flatMap(docTags))].sort();
+  // 标签按命名空间(轴)分组:主题/工具/状态/类型…;只含 1 个值的小轴合并进「其他」减少碎片
+  const tagGroups = {};
+  allTags.forEach(t => { const ax = t.includes('/') ? t.split('/')[0] : '其他'; (tagGroups[ax] = tagGroups[ax] || []).push(t); });
+  const mainAxes = Object.keys(tagGroups).filter(ax => ax !== '其他' && tagGroups[ax].length >= 2)
+    .sort((a, b) => tagGroups[b].length - tagGroups[a].length);
+  const miscTags = Object.keys(tagGroups).filter(ax => !(ax !== '其他' && tagGroups[ax].length >= 2))
+    .flatMap(ax => tagGroups[ax]).sort();
+  const topCats = catData.cats;  // 全部顶层(编辑器选择器用)
+  const navCats = topCats.filter(c => c.count > 0);  // 导航只显示当前范围内有内容的分类
+  const curTop = catId ? (topCats.find(c => c.id === catId)
+    || topCats.find(c => (c.children || []).some(k => k.id === catId))) : null;
+  const subCats = curTop ? (curTop.children || []).filter(s => s.count > 0) : [];
+  const searching = search.trim().length > 0;
+  // 编辑器分类选择器:由 editing.cat_id 反推顶层 + 子级
+  const editTop = editing ? (topCats.find(c => c.id === editing.cat_id)
+    || topCats.find(c => (c.children || []).some(k => k.id === editing.cat_id))) : null;
+  const editSubs = editTop ? (editTop.children || []) : [];
 
   return (
     <React.Fragment>
@@ -1850,7 +1965,7 @@ function Knowledge() {
               {staff && (
                 <div className="admin-tabs">
                   {KB_LEVELS.map(([k, label]) => (
-                    <button key={k} className={lvl === k ? 'on' : ''} onClick={() => { setLvl(k); setF('all'); }}>{label}</button>
+                    <button key={k} className={lvl === k ? 'on' : ''} onClick={() => { setLvl(k); setSearch(''); }}>{label}</button>
                   ))}
                   <button style={{ marginLeft: 'auto' }} onClick={() => { setErr(''); setEditing(blankDoc()); }}>+ 发布文档</button>
                 </div>
@@ -1874,11 +1989,64 @@ function Knowledge() {
                   ))}
                 </div>
               )}
-              <Reveal>
-                <div className="filter-bar">
-                  {DOC_CATS.map(c => <button key={c.id} className={f === c.id ? 'on' : ''} onClick={() => setF(c.id)}>{c.label}</button>)}
+              <div className="kb-cats">
+                <button className={!catId ? 'on' : ''} onClick={() => { setCatId(0); setSearch(''); }}>全部 <em>{catData.total}</em></button>
+                {navCats.map(c => (
+                  <button key={c.id} className={(curTop && curTop.id === c.id) ? 'on' : ''}
+                    onClick={() => { setCatId(c.id); setSearch(''); }}>{c.name} <em>{c.count}</em></button>
+                ))}
+                {catData.uncategorized > 0 && (
+                  <button className={catId === -1 ? 'on' : ''} onClick={() => { setCatId(-1); setSearch(''); }}>未分类 <em>{catData.uncategorized}</em></button>
+                )}
+              </div>
+              {subCats.length > 0 && (
+                <div className="kb-cats kb-subcats">
+                  <button className={catId === curTop.id ? 'on' : ''} onClick={() => { setCatId(curTop.id); setSearch(''); }}>全部 {curTop.name}</button>
+                  {subCats.map(s => (
+                    <button key={s.id} className={catId === s.id ? 'on' : ''} onClick={() => { setCatId(s.id); setSearch(''); }}>{s.name} <em>{s.count}</em></button>
+                  ))}
                 </div>
-              </Reveal>
+              )}
+              <div className="kb-search">
+                <span className="kb-search-icon">⌕</span>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索知识库:标题 / 正文 / 标签…(全库)" />
+                {search && <button className="kb-search-x" onClick={() => setSearch('')} title="清空">✕</button>}
+              </div>
+              {allTags.length > 0 && (
+                <div className="kb-tags-wrap">
+                  <button className="kb-tags-toggle" onClick={() => setShowTags(v => !v)}>
+                    🏷 标签筛选 <em>{showTags ? '收起 ▲' : allTags.length + ' 个 ▾'}</em>
+                  </button>
+                  {tag && <button className="kb-tags-active" onClick={() => setTag('')}>{tag} ✕</button>}
+                  {showTags && (
+                    <div className="kb-tags-panel">
+                      {mainAxes.map(ax => (
+                        <div className="kb-tag-axis" key={ax}>
+                          <span className="kb-tag-axis-name">{ax}</span>
+                          {tagGroups[ax].map(t => (
+                            <button key={t} className={'kb-tag-chip' + (tag === t ? ' on' : '')}
+                              onClick={() => setTag(tag === t ? '' : t)}>
+                              {t.split('/').slice(1).join('/')}
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+                      {miscTags.length > 0 && (
+                        <div className="kb-tag-axis">
+                          <span className="kb-tag-axis-name">其他</span>
+                          {miscTags.map(t => (
+                            <button key={t} className={'kb-tag-chip' + (tag === t ? ' on' : '')}
+                              onClick={() => setTag(tag === t ? '' : t)}>
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              {searching && docs !== null && <div className="rb-hint" style={{ margin: '2px 0 10px' }}>搜索「{search.trim()}」· 全库命中 {list.length} 篇 · <a href="#/knowledge" onClick={e => { e.preventDefault(); setSearch(''); }}>返回分类浏览</a></div>}
               {docs === null ? <div className="demo-banner">LOADING · 正在加载文档…</div> : (
                 <div className="index-list">
                   {list.map((d, i) => (
@@ -1902,7 +2070,7 @@ function Knowledge() {
                       <span className="arrow">→</span>
                     </a>
                   ))}
-                  {list.length === 0 && <div className="demo-banner">该层级 / 分类下暂无文档{staff ? ',点右上「+ 发布文档」写第一篇。' : '。'}</div>}
+                  {list.length === 0 && <div className="demo-banner">{searching ? '没有匹配「' + search.trim() + '」的文档,换个关键词试试。' : ('该层级 / 分类下暂无文档' + (staff ? ',点右上「+ 发布文档」写第一篇。' : '。'))}</div>}
                 </div>
               )}
             </React.Fragment>
@@ -1924,13 +2092,13 @@ function Knowledge() {
                 <span className="avatar mentor">{(detail.author_name || '?')[0]}</span>
                 <div>
                   <div className="p-name">{detail.author_name} <span className="role-pill">{kbLevelTag(detail)}</span></div>
-                  <div className="p-time">{fmtTime(detail.created)}{detail.updated && detail.updated !== detail.created ? ' · 更新于 ' + fmtTime(detail.updated) : ''} · {(DOC_PILL[detail.cat] || [0, detail.cat])[1]}</div>
+                  <div className="p-time">{fmtTime(detail.created)}{detail.updated && detail.updated !== detail.created ? ' · 更新于 ' + fmtTime(detail.updated) : ''}{detail.cat_name ? ' · ' + (detail.parent_cat_name ? detail.parent_cat_name + ' / ' : '') + detail.cat_name : ''}</div>
+                  {detail.tags && <div className="thread-meta" style={{ marginTop: 4 }}>{detail.tags.split(',').map(t => t.trim()).filter(Boolean).map(t => <span key={t} className="kb-tag-pill">{t}</span>)}</div>}
                 </div>
               </div>
               <div className="post-body">
                 {detail.summary && <p style={{ color: 'var(--dim)' }}>{detail.summary}</p>}
-                {String(detail.content || '').split('\n').map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
-                {!detail.content && !detail.summary && <p>(暂无正文)</p>}
+                <Markdown text={detail.content} />
               </div>
               {detail.link && <a className="btn btn-primary" style={{ marginTop: 10 }} href={detail.link} target="_blank" rel="noopener">打开关联链接 →</a>}
             </div>
@@ -1958,13 +2126,21 @@ function Knowledge() {
                   )}
                   <div className="field">
                     <span className="f-pre">分类</span>
-                    <select value={editing.cat} onChange={e => set('cat', e.target.value)}>
-                      <option value="prompt">Prompt 模板</option>
-                      <option value="workflow">工作流</option>
-                      <option value="review">复盘</option>
-                      <option value="tool">工具评测</option>
+                    <select value={editTop ? editTop.id : 0} onChange={e => set('cat_id', parseInt(e.target.value, 10) || 0)}>
+                      <option value={0}>(未分类)</option>
+                      {topCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
+                  {editSubs.length > 0 && (
+                    <div className="field">
+                      <span className="f-pre">子分类</span>
+                      <select value={editSubs.some(s => s.id === editing.cat_id) ? editing.cat_id : 0}
+                        onChange={e => set('cat_id', parseInt(e.target.value, 10) || editTop.id)}>
+                        <option value={0}>(直接归入 {editTop.name})</option>
+                        {editSubs.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                    </div>
+                  )}
                   <div className="field"><input value={editing.icon} onChange={e => set('icon', e.target.value)} placeholder="图标 emoji,如 📌" /></div>
                   <div className="field"><input value={editing.tags} onChange={e => set('tags', e.target.value)} placeholder="标签,逗号分隔" /></div>
                   <div className="field"><input value={editing.date} onChange={e => set('date', e.target.value)} placeholder="日期,如 2026-06" /></div>
@@ -2576,6 +2752,93 @@ function GroupsAdmin() {
   );
 }
 
+/* ---------- 管理后台:知识库分类管理(两层 kb_cats) ---------- */
+function CatsAdmin() {
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState('');
+  const [topName, setTopName] = useState('');
+  const [subName, setSubName] = useState({});
+
+  const load = () => api('/api/kb/cats').then(setData).catch(e => setErr(e.message));
+  useEffect(load, []);
+
+  const create = async (name, parent_id) => {
+    if (!name.trim()) { setErr('分类名不能为空'); return; }
+    setErr('');
+    try { await api('/api/admin/kb/cats', { method: 'POST', body: { name: name.trim(), parent_id: parent_id || 0 } }); load(); }
+    catch (e) { setErr(e.message); }
+  };
+  const rename = async c => {
+    const name = window.prompt('重命名分类', c.name);
+    if (name === null || !name.trim() || name.trim() === c.name) return;
+    setErr('');
+    try { await api('/api/admin/kb/cats/' + c.id, { method: 'PUT', body: { name: name.trim(), parent_id: c.parent_id || 0, sort: c.sort || 0 } }); load(); }
+    catch (e) { setErr(e.message); }
+  };
+  const setSort = async (c, sort) => {
+    setErr('');
+    try { await api('/api/admin/kb/cats/' + c.id, { method: 'PUT', body: { name: c.name, parent_id: c.parent_id || 0, sort: parseInt(sort, 10) || 0 } }); load(); }
+    catch (e) { setErr(e.message); }
+  };
+  const del = async c => {
+    if (!window.confirm('删除分类「' + c.name + '」?(其下有文档或子分类时无法删除)')) return;
+    setErr('');
+    try { await api('/api/admin/kb/cats/' + c.id, { method: 'DELETE' }); load(); }
+    catch (e) { setErr(e.message); }
+  };
+
+  return (
+    <div>
+      {err && <div className="demo-banner" style={{ borderColor: '#d05858', color: '#d05858' }}>ERROR · {err}</div>}
+      <p className="rb-hint" style={{ margin: '0 0 12px' }}>两层分类树:顶层分类下可建子分类。导入个人库时会按文件夹路径自动生成,这里可手动增删改、调整排序(数字大的在前,回车保存)。</p>
+      <div className="composer" style={{ display: 'flex', gap: 10, alignItems: 'center', padding: 16 }}>
+        <div className="field" style={{ flex: 1, marginBottom: 0 }}>
+          <input value={topName} onChange={e => setTopName(e.target.value)} placeholder="新顶层分类,如 AI绘画" maxLength={60}
+            onKeyDown={e => { if (e.key === 'Enter') { create(topName, 0); setTopName(''); } }} />
+        </div>
+        <button className="btn btn-primary" style={{ padding: '9px 22px', fontSize: 13 }} onClick={() => { create(topName, 0); setTopName(''); }}>+ 顶层分类</button>
+      </div>
+      {data === null ? <div className="demo-banner">LOADING · 正在加载分类…</div> : (data.cats || []).length === 0 ? (
+        <div className="demo-banner">还没有分类。在上方新建,或用 import_local_kb.py 导入个人库自动生成。</div>
+      ) : data.cats.map(c => (
+        <div className="admin-wrap" key={c.id} style={{ marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0 6px', gap: 10, flexWrap: 'wrap' }}>
+            <h3 style={{ fontSize: 15.5 }}>{c.name} <span className="mono" style={{ fontSize: 12, color: 'var(--faint)' }}>· {c.count} 文档 · {(c.children || []).length} 子类</span></h3>
+            <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input className="cat-sort" defaultValue={c.sort} title="排序(大在前,回车保存)" onKeyDown={e => { if (e.key === 'Enter') setSort(c, e.target.value); }} />
+              <button className="admin-act" onClick={() => rename(c)}>改名</button>
+              <button className="admin-act danger" onClick={() => del(c)}>删除</button>
+            </span>
+          </div>
+          <table className="admin-table">
+            <tbody>
+              {(c.children || []).map(s => (
+                <tr key={s.id}>
+                  <td>{s.name}</td>
+                  <td className="mono">{s.count} 文档</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <input className="cat-sort" defaultValue={s.sort} title="排序(回车保存)" onKeyDown={e => { if (e.key === 'Enter') setSort(s, e.target.value); }} />
+                    <button className="admin-act" style={{ marginLeft: 6 }} onClick={() => rename(s)}>改名</button>
+                    <button className="admin-act danger" style={{ marginLeft: 6 }} onClick={() => del(s)}>删除</button>
+                  </td>
+                </tr>
+              ))}
+              <tr>
+                <td colSpan="3">
+                  <input value={subName[c.id] || ''} onChange={e => setSubName(m => ({ ...m, [c.id]: e.target.value }))}
+                    placeholder={'新子分类(归入 ' + c.name + ')'} maxLength={60}
+                    onKeyDown={e => { if (e.key === 'Enter') { create(subName[c.id] || '', c.id); setSubName(m => ({ ...m, [c.id]: '' })); } }} />
+                  <button className="admin-act" style={{ marginLeft: 8 }} onClick={() => { create(subName[c.id] || '', c.id); setSubName(m => ({ ...m, [c.id]: '' })); }}>+ 子分类</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ---------- 管理后台:内容管理 ---------- */
 const KIND_TABS = [
   ['work', '作品'], ['gig', '商单需求'], ['case', '合作案例'], ['course', '课程'],
@@ -2770,6 +3033,7 @@ function Admin() {
             <button className={tab === 'threads' ? 'on' : ''} onClick={() => setTab('threads')}>THREADS 帖子管理</button>
             <button className={tab === 'users' ? 'on' : ''} onClick={() => setTab('users')}>USERS 用户管理</button>
             <button className={tab === 'groups' ? 'on' : ''} onClick={() => setTab('groups')}>GROUPS 组管理</button>
+            <button className={tab === 'cats' ? 'on' : ''} onClick={() => setTab('cats')}>CATS 知识库分类</button>
           </div>
           {err && <div className="demo-banner" style={{ borderColor: '#d05858', color: '#d05858' }}>ERROR · {err}</div>}
 
@@ -2793,6 +3057,8 @@ function Admin() {
           {tab === 'content' && <ContentAdmin />}
 
           {tab === 'groups' && <GroupsAdmin />}
+
+          {tab === 'cats' && <CatsAdmin />}
 
           {tab === 'threads' && (
             threads === null ? <div className="demo-banner">LOADING · 正在加载帖子…</div> : (
