@@ -9,6 +9,7 @@ import os
 import re
 import secrets
 import sqlite3
+import sys
 import time
 
 from fastapi import Depends, FastAPI, Header, HTTPException
@@ -16,7 +17,17 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__), "data", "whale.db"))
-SECRET = os.environ.get("JWT_SECRET", "please-change-me")
+SECRET = os.environ.get("JWT_SECRET")
+if not SECRET:
+    # 绝不回退到公开仓库里写死的固定密钥(否则任何人都能伪造登录 token)。
+    # 未配置时生成一次性随机密钥:服务可正常启动,但重启后登录态失效——以此提醒运维设置固定值。
+    SECRET = secrets.token_hex(32)
+    print(
+        "[安全警告] 未设置 JWT_SECRET 环境变量,已生成一次性随机密钥;"
+        "重启后所有登录态将失效。生产环境务必设置固定且保密的 JWT_SECRET。",
+        file=sys.stderr,
+        flush=True,
+    )
 ADMIN_EMAIL = "admin@taowhale.local"
 LEGACY_ADMIN_EMAIL = "admin@whalesea.local"  # 品牌更名前的旧管理员邮箱,启动时自动迁移
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")  # 设置后,启动时将官方账号密码重置为该值

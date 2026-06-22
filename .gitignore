@@ -1,4 +1,7 @@
 data/*.db
+.env
+.env.local
+.env.*.local
 .claude/
 __pycache__/
 *.pyc
