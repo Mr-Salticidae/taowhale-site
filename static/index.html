@@ -147,24 +147,11 @@ button { font-family:var(--font); }
   position:absolute; left:0; right:0; top:84px; bottom:24px; z-index:0; pointer-events:none;
   transform:translate(var(--gx,0px), var(--gy,0px)); will-change:transform;
 }
-.ribbon-img { display:block; width:100%; height:100%; object-fit:contain; object-position:center; }
-/* 主题动效① 液态流光:多束柔光以不同周期/相位在缎带内漂移叠加,光团膨胀游移、有机涌动(参考视频:发光缎带里光在波动流淌) */
-.ribbon-flow {
-  position:absolute; inset:0; z-index:1; pointer-events:none; overflow:hidden;
-  -webkit-mask:url("assets/hero-ribbon.png") center / contain no-repeat;
-          mask:url("assets/hero-ribbon.png") center / contain no-repeat;
-  mix-blend-mode:screen; opacity:.85;
+/* 主题动效① 整体液态流动:SVG 湍流噪声 + 位移滤镜,让整张 logo 持续有机变形流动(参考视频:缎带本身不断流淌起伏) */
+.ribbon-img {
+  display:block; width:100%; height:100%; object-fit:contain; object-position:center;
+  filter:url(#liquidFlow); will-change:filter;
 }
-.ribbon-flow .fb {
-  position:absolute; top:-25%; height:150%; width:62%; border-radius:50%;
-  filter:blur(34px); will-change:transform; mix-blend-mode:screen;
-}
-.ribbon-flow .fb1 { background:radial-gradient(closest-side, rgba(255,255,255,.60), transparent 72%); animation:fbDrift1 11s ease-in-out infinite; }
-.ribbon-flow .fb2 { background:radial-gradient(closest-side, rgba(168,224,255,.55), transparent 72%); animation:fbDrift2 15s ease-in-out infinite; }
-.ribbon-flow .fb3 { background:radial-gradient(closest-side, rgba(206,240,255,.50), transparent 72%); animation:fbDrift3 19s ease-in-out infinite; }
-@keyframes fbDrift1 { 0%{transform:translateX(-34%) scaleX(1)}   50%{transform:translateX(82%) scaleX(1.25)} 100%{transform:translateX(-34%) scaleX(1)} }
-@keyframes fbDrift2 { 0%{transform:translateX(118%) scaleX(1.2)} 50%{transform:translateX(6%)  scaleX(.9)}   100%{transform:translateX(118%) scaleX(1.2)} }
-@keyframes fbDrift3 { 0%{transform:translateX(46%)  scaleX(.95)} 50%{transform:translateX(-42%) scaleX(1.3)} 100%{transform:translateX(46%)  scaleX(.95)} }
 /* 主题动效② 互动:柔光晕跟随鼠标在缎带上点亮(缎带形状遮罩),配合整体轻微视差 */
 .ribbon-cursor {
   position:absolute; inset:0; z-index:2; pointer-events:none;
@@ -431,10 +418,7 @@ html[data-theme="dark"] .hero-mark .body-cv { opacity:.96; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
-  /* 例外:主图缎带的液态流光是极轻微的氛围光效(光在 logo 内涌动,无大幅位移,不引发前庭不适),保留以呈现主题动效 */
-  .ribbon-flow .fb1 { animation-duration:11s !important; }
-  .ribbon-flow .fb2 { animation-duration:15s !important; }
-  .ribbon-flow .fb3 { animation-duration:19s !important; }
+  /* 主图缎带的液态流动为 SVG 滤镜(SMIL)驱动,是极轻微的氛围动效,呈现主题流动效果 */
 }
 
 /* ---------------- 论坛 ---------------- */
@@ -1087,8 +1071,17 @@ function HeroRibbon() {
   }, []);
   return (
     <div className="hero-ribbon" ref={ref}>
+      <svg className="ribbon-defs" width="0" height="0" aria-hidden="true" focusable="false">
+        <filter id="liquidFlow" x="-15%" y="-30%" width="130%" height="160%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.008 0.013" numOctaves="2" seed="7" result="noise">
+            <animate attributeName="baseFrequency" dur="22s" repeatCount="indefinite"
+              calcMode="spline" keyTimes="0;0.5;1" keySplines="0.45 0 0.55 1;0.45 0 0.55 1"
+              values="0.008 0.013;0.013 0.009;0.008 0.013" />
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="20" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
       <img className="ribbon-img" src="assets/hero-ribbon.png" alt="鲸海拾贝 主视觉" />
-      <div className="ribbon-flow"><span className="fb fb1" /><span className="fb fb2" /><span className="fb fb3" /></div>
       <div className="ribbon-cursor" />
     </div>
   );
