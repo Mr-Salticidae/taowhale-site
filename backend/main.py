@@ -1328,6 +1328,12 @@ def admin_cat_delete(cid: int, admin=Depends(require_admin)):
 # ---------------- 静态站点 ----------------
 @app.get("/{full_path:path}")
 def spa(full_path: str):
+    # 优先返回 STATIC_DIR 下的真实文件(图片等资源),否则回退到 SPA 入口
+    if full_path:
+        base = os.path.abspath(STATIC_DIR)
+        candidate = os.path.abspath(os.path.join(base, full_path))
+        if candidate.startswith(base + os.sep) and os.path.isfile(candidate):
+            return FileResponse(candidate)
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 

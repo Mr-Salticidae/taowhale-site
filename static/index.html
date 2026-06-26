@@ -128,25 +128,50 @@ button { font-family:var(--font); }
 .nav-burger { display:none; background:none; border:none; color:var(--text); font-size:21px; cursor:pointer; padding:0 8px; }
 
 /* ---------------- Hero ---------------- */
-.hero { position:relative; min-height:94svh; display:flex; align-items:center; overflow:hidden; }
+/* 主图永远是浅色展示面(明/暗主题一致):白底 + 深色文案,确保蓝色水流缎带始终呈现参考图效果。
+   通过作用域内重设 CSS 变量,所有子元素(标题/副标题/按钮/卡片)自动套用浅色取值。 */
+.hero {
+  position:relative; min-height:94svh; display:flex; align-items:center; overflow:hidden;
+  background:#ffffff;
+  --bg:#ffffff; --text:#15181e; --dim:#5b6370; --faint:#98a0ab;
+  --accent:#0d9d87; --accent-dim:rgba(13,157,135,.5);
+  --line:rgba(18,24,32,.09); --line-strong:rgba(18,24,32,.2);
+  --hero-shadow:rgba(255,255,255,.85);
+}
 .hero-canvas { position:absolute; inset:0; width:100%; height:100%; opacity:.5; }
-.hero-canvas.flow { opacity:.9; animation:flow-in 2.2s ease both; }
-@keyframes flow-in { from { opacity:0; } to { opacity:.9; } }
-/* 蓝图网格 —— 几乎是潜意识层面的 */
-.hero::before {
-  content:""; position:absolute; inset:0; pointer-events:none;
-  background-image:linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size:72px 72px;
-  mask-image:radial-gradient(ellipse 75% 65% at 50% 20%, #000 20%, transparent 72%);
+
+/* ===== 主图缎带:同事的水流渲染图(透明 PNG),超大居中,静止无动效 ===== */
+.hero-ribbon {
+  position:absolute; left:50%; top:50%; z-index:0; pointer-events:none;
+  width:min(1180px, 94vw); transform:translate(-50%,-50%);
 }
-.aurora {
-  position:absolute; width:760px; height:760px; border-radius:50%;
-  top:-28%; right:-14%; pointer-events:none;
-  background:radial-gradient(circle, var(--aurora-c), transparent 62%);
-  filter:blur(70px); animation:breath 16s ease-in-out infinite alternate;
+.ribbon-img { display:block; width:100%; height:auto; }
+
+/* 文案区可读性托底光晕(白底:中心提亮一层纯白,让黑色标题从半透明缎带上浮起) */
+.hero-inner::before {
+  content:""; position:absolute; left:50%; top:47%; transform:translate(-50%,-50%);
+  width:min(1040px,94vw); height:min(460px,54vh); z-index:0; pointer-events:none;
+  background:radial-gradient(ellipse, var(--bg) 14%, transparent 70%); opacity:.78;
 }
-@keyframes breath { from { opacity:.7; transform:scale(1);} to { opacity:1; transform:scale(1.12);} }
+
+/* 居中黑色粗体品牌字标 */
+.hero h1.hero-brand {
+  font-size:clamp(46px, 9.4vw, 138px); font-weight:800; line-height:1.02;
+  letter-spacing:1px; margin:0 auto 20px; max-width:none; color:var(--text);
+}
+.hero h1.hero-brand i { font-style:italic; font-weight:800; color:var(--text); padding-right:.05em; }
+.hero-lead {
+  font-size:clamp(15px,1.7vw,20px); color:var(--dim); font-weight:500;
+  letter-spacing:.04em; margin:0 auto 40px;
+}
+
+/* 向下滚动提示 */
+.hero-scroll {
+  position:absolute; left:50%; bottom:24px; transform:translateX(-50%); z-index:3;
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  font-family:var(--mono); font-size:11px; letter-spacing:.26em; text-transform:uppercase; color:var(--faint);
+}
+.hero-scroll .chev { width:16px; height:16px; border-right:1.5px solid var(--faint); border-bottom:1.5px solid var(--faint); transform:rotate(45deg); opacity:.6; }
 
 .hero-inner { position:relative; z-index:2; max-width:var(--maxw); margin:0 auto; padding:150px 32px 80px; width:100%; text-align:center; }
 /* 主屏鲸环:大型发光水流主视觉,垫在主标题之后,静止悬浮(不跳动) */
@@ -364,6 +389,10 @@ html[data-theme="dark"] .hero-mark .body-cv { opacity:.96; }
 .nav-burger { display:block; margin-left:auto; }
   .nav-cta { display:none; }
 }
+@media (max-width: 1080px) {
+  .hero-ribbon { width:130vw; }
+  .hero-scroll { display:none; }
+}
 @media (max-width: 620px) {
   .g2,.g3,.g4 { grid-template-columns:1fr; }
   .hero-stats .stat { min-width:42%; padding-left:0 !important; border-left:none !important; }
@@ -371,6 +400,8 @@ html[data-theme="dark"] .hero-mark .body-cv { opacity:.96; }
   .rside { text-align:left; }
   .section { padding:96px 0; }
   .wordmark { white-space:normal; }
+  .hero h1.hero-brand { font-size:clamp(40px,13vw,64px); }
+  .hero-ribbon { width:165vw; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
@@ -991,6 +1022,15 @@ function WhaleScribe() {
   );
 }
 
+/* 主屏巨型缎带:同事提供的蓝色水流质感渲染图(鲸环 mark),已抠成透明 PNG,静止呈现 */
+function HeroRibbon() {
+  return (
+    <div className="hero-ribbon">
+      <img className="ribbon-img" src="assets/hero-ribbon.png" alt="鲸海拾贝 主视觉" />
+    </div>
+  );
+}
+
 const CN_WORDMARK_VB = "236.78 520.78 122.74 34.41";
 const CN_WORDMARK_DS = [
   "M 356.51 543.52 L 353.68 543.6 L 353.68 524.54 L 339.69 524.54 L 339.69 543.52 L 336.93 543.52 L 336.93 521.86 L 356.4 521.86 L 356.51 521.97 L 356.51 543.52 Z",
@@ -1295,29 +1335,19 @@ function Home() {
   return (
     <React.Fragment>
       <section className="hero">
-        <FlowCanvas />
-        <DustCanvas />
-        <div className="aurora" />
+        <HeroRibbon />
         <div className="hero-inner">
-          <div className="hero-mark"><WhaleScribe /></div>
           <Reveal><span className="hero-tag">Taowhale · AIGC Studio</span></Reveal>
-          <Reveal delay={140}><h1>在 AI 的鲸海里,<br />拾起属于你的<span className="accent-word">那颗珍珠</span>。</h1></Reveal>
-          <Reveal delay={280}><p className="sub">鲸海拾贝是聚焦 AIGC 创作的学习、展示与商业转化平台。系统掌握 AI 工具,沉淀方法论,对接真实商业需求。</p></Reveal>
+          <Reveal delay={140}><h1 className="hero-brand">鲸海拾贝 <i>Taowhale</i></h1></Reveal>
+          <Reveal delay={280}><p className="hero-lead">一个聚焦 AIGC 创作者的学习、展示与接单平台</p></Reveal>
           <Reveal delay={420}>
             <div className="hero-actions">
               <a className="btn btn-primary" href="#/works">浏览学员作品</a>
               <a className="btn btn-ghost" href="#/courses">开始学习 →</a>
             </div>
           </Reveal>
-          <Reveal delay={560}>
-            <div className="hero-stats">
-              <div className="stat"><CountUp end={300} suffix="+" /><span>Creators / 创作者</span></div>
-              <div className="stat"><CountUp end={520} suffix="+" /><span>Works / 学员作品</span></div>
-              <div className="stat"><CountUp end={60} suffix="+" /><span>Projects / 完成商单</span></div>
-              <div className="stat"><CountUp end={200} suffix="+" /><span>Docs / 知识库文档</span></div>
-            </div>
-          </Reveal>
         </div>
+        <div className="hero-scroll" aria-hidden="true"><span>向下滚动探索</span><span className="chev" /></div>
       </section>
 
       <section className="section hr">
