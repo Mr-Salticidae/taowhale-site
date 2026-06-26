@@ -145,8 +145,34 @@ button { font-family:var(--font); }
    任何显示器(宽/高比不同)下都不会被裁切;宽屏时两侧自然留白。 ===== */
 .hero-ribbon {
   position:absolute; left:0; right:0; top:84px; bottom:24px; z-index:0; pointer-events:none;
+  transform:translate(var(--gx,0px), var(--gy,0px)); will-change:transform;
 }
 .ribbon-img { display:block; width:100%; height:100%; object-fit:contain; object-position:center; }
+/* 主题动效① 流动循环:多道柔光带沿水流缎带持续无缝流动(缎带形状遮罩,screen 柔光),像水一直在 logo 里流 */
+.ribbon-sheen {
+  position:absolute; inset:0; z-index:1; pointer-events:none;
+  -webkit-mask:url("assets/hero-ribbon.png") center / contain no-repeat;
+          mask:url("assets/hero-ribbon.png") center / contain no-repeat;
+  background-image:linear-gradient(100deg,
+    rgba(255,255,255,0)   0%,
+    rgba(190,234,255,.26) 12%,
+    rgba(255,255,255,.50) 19%,
+    rgba(190,234,255,.26) 26%,
+    rgba(255,255,255,0)   42%);
+  background-size:560px 100%; background-repeat:repeat;
+  mix-blend-mode:screen; opacity:.7; will-change:background-position;
+  animation:ribbonFlow 7s linear infinite;
+}
+@keyframes ribbonFlow { from { background-position:0 0; } to { background-position:560px 0; } }
+/* 主题动效② 互动:柔光晕跟随鼠标在缎带上点亮(缎带形状遮罩),配合整体轻微视差 */
+.ribbon-cursor {
+  position:absolute; inset:0; z-index:2; pointer-events:none;
+  -webkit-mask:url("assets/hero-ribbon.png") center / contain no-repeat;
+          mask:url("assets/hero-ribbon.png") center / contain no-repeat;
+  background:radial-gradient(26vmin 26vmin at var(--mx,50%) var(--my,50%),
+    rgba(255,255,255,.55), rgba(150,220,255,.26) 38%, transparent 70%);
+  mix-blend-mode:screen; opacity:var(--glow,0); will-change:opacity;
+}
 
 /* 文案区可读性托底光晕(白底:中心提亮一层纯白,让黑色标题从半透明缎带上浮起) */
 .hero-inner::before {
@@ -404,6 +430,8 @@ html[data-theme="dark"] .hero-mark .body-cv { opacity:.96; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+  /* 例外:主图缎带的流动柔光是极轻微的氛围光效(光在 logo 内流动,无大幅位移,不引发前庭不适),保留以呈现主题动效 */
+  .ribbon-sheen { animation-duration:7s !important; }
 }
 
 /* ---------------- 论坛 ---------------- */
@@ -1023,9 +1051,42 @@ function WhaleScribe() {
 
 /* 主屏巨型缎带:同事提供的蓝色水流质感渲染图(鲸环 mark),已抠成透明 PNG,静止呈现 */
 function HeroRibbon() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const host = ref.current;
+    const hero = host.closest('.hero');
+    if (!hero) return;
+    let raf, tx = .5, ty = .5, cx = .5, cy = .5, ta = 0, ca = 0;
+    const onMove = e => {
+      const r = hero.getBoundingClientRect();
+      tx = (e.clientX - r.left) / r.width;
+      ty = (e.clientY - r.top) / r.height;
+      ta = 1;
+    };
+    const onLeave = () => { ta = 0; };
+    hero.addEventListener('mousemove', onMove);
+    hero.addEventListener('mouseleave', onLeave);
+    const tick = () => {
+      cx += (tx - cx) * .08; cy += (ty - cy) * .08; ca += (ta - ca) * .06;
+      host.style.setProperty('--mx', (cx * 100).toFixed(2) + '%');
+      host.style.setProperty('--my', (cy * 100).toFixed(2) + '%');
+      host.style.setProperty('--gx', ((.5 - cx) * 26 * ca).toFixed(1) + 'px');
+      host.style.setProperty('--gy', ((.5 - cy) * 18 * ca).toFixed(1) + 'px');
+      host.style.setProperty('--glow', ca.toFixed(3));
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      hero.removeEventListener('mousemove', onMove);
+      hero.removeEventListener('mouseleave', onLeave);
+    };
+  }, []);
   return (
-    <div className="hero-ribbon">
+    <div className="hero-ribbon" ref={ref}>
       <img className="ribbon-img" src="assets/hero-ribbon.png" alt="鲸海拾贝 主视觉" />
+      <div className="ribbon-sheen" />
+      <div className="ribbon-cursor" />
     </div>
   );
 }
