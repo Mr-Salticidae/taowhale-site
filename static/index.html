@@ -140,12 +140,13 @@ button { font-family:var(--font); }
 }
 .hero-canvas { position:absolute; inset:0; width:100%; height:100%; opacity:.5; }
 
-/* ===== 主图缎带:同事的水流渲染图(透明 PNG),超大居中,静止无动效 ===== */
+/* ===== 主图缎带:同事的水流渲染图(透明 PNG),静止无动效。
+   定位为「页眉下方 → 主图底部」的整块区域,图片用 object-fit:contain 在该区域内完整自适应缩放,
+   任何显示器(宽/高比不同)下都不会被裁切;宽屏时两侧自然留白。 ===== */
 .hero-ribbon {
-  position:absolute; left:50%; top:50%; z-index:0; pointer-events:none;
-  width:min(1180px, 94vw); transform:translate(-50%,-50%);
+  position:absolute; left:0; right:0; top:84px; bottom:24px; z-index:0; pointer-events:none;
 }
-.ribbon-img { display:block; width:100%; height:auto; }
+.ribbon-img { display:block; width:100%; height:100%; object-fit:contain; object-position:center; }
 
 /* 文案区可读性托底光晕(白底:中心提亮一层纯白,让黑色标题从半透明缎带上浮起) */
 .hero-inner::before {
@@ -390,7 +391,6 @@ html[data-theme="dark"] .hero-mark .body-cv { opacity:.96; }
   .nav-cta { display:none; }
 }
 @media (max-width: 1080px) {
-  .hero-ribbon { width:130vw; }
   .hero-scroll { display:none; }
 }
 @media (max-width: 620px) {
@@ -401,7 +401,6 @@ html[data-theme="dark"] .hero-mark .body-cv { opacity:.96; }
   .section { padding:96px 0; }
   .wordmark { white-space:normal; }
   .hero h1.hero-brand { font-size:clamp(40px,13vw,64px); }
-  .hero-ribbon { width:165vw; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
