@@ -3,6 +3,7 @@ data/*.db
 .env.local
 .env.*.local
 .claude/
+.workbuddy/
 __pycache__/
 *.pyc
 node_modules/
