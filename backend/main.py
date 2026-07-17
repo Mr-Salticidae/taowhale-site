@@ -742,8 +742,8 @@ def check_kb_body(body: KbDocIn):
         raise HTTPException(400, "标题需 1-120 个字符")
     if len(body.summary) > 2000:
         raise HTTPException(400, "摘要过长(最多 2000 字)")
-    if len(body.content) > 50000:
-        raise HTTPException(400, "正文过长(最多 50000 字)")
+    if len(body.content.encode('utf-8')) > 50 * 1024 * 1024:
+        raise HTTPException(400, "正文过大(最多 50MB)")
     if body.level not in VALID_LEVELS:
         raise HTTPException(400, "层级不合法")
 
@@ -1331,7 +1331,9 @@ def spa(full_path: str):
     # 优先返回 STATIC_DIR 下的真实文件(图片等资源),否则回退到 SPA 入口
     if full_path:
         base = os.path.abspath(STATIC_DIR)
-        candidate = os.path.abspath(os.path.join(base, full_path))
+        # 兼容 /static/ 前缀(md里引用的图片/视频用 /static/feishu_imgs/... 等)
+        rel = full_path[len("static/"):] if full_path.startswith("static/") else full_path
+        candidate = os.path.abspath(os.path.join(base, rel))
         if candidate.startswith(base + os.sep) and os.path.isfile(candidate):
             return FileResponse(candidate)
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
